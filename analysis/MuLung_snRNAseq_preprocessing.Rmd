@@ -21,8 +21,10 @@ set.seed(1000)
 options(future.globals.maxSize = 8000 * 1024^2)
 ```
 
-## load R libraries
-```{r libraries}
+# 1. Preprocessing of murine lung samples from normal diet vs mice with high fat diet + L-name treatment with HFpEF
+
+## Load R libraries
+```{r load R libraries}
 suppressPackageStartupMessages({
   library(plyr)
   library(patchwork)
@@ -45,9 +47,331 @@ suppressPackageStartupMessages({
 })
 ```
 
-# 1. Preprocessing of murine lung samples from healthy mice vs mice with pulmonary hypertension and HFpEF
 ## Set directory
 ```{r set directory}
 basedir <- here()
+source(paste0(basedir,'/analysis/Lung_snRNAseq_functions.R'), echo=FALSE)
+
+# Create directory to save preprocessed seurat objects
+output_obj_dir <- paste0(basedir,"/data/Output/")
+dir.create(output_obj_dir)
+
 ```
+
+## Read lung tissue samples
+```{r read lung tissue samples}
+pattern <- ".*_seurat.*"
+files <- list.files(paste0(basedir,"/data", "/"), pattern = pattern)
+LungMu_obj.list <- c()
+for (f in files){
+  print(f)
+  LungMu_obj <- readRDS(file = paste0(basedir,"/data/",f))
+  LungMu_obj.list <- c(LungMu_obj.list,LungMu_obj)
+}
+```
+
+## Merged samples into one seurat object
+```{r merge samples}
+LungMu_obj <- merge(LungMu_obj.list[[1]], y = LungMu_obj.list[2:length(LungMu_obj.list)])
+print(dim(LungMu_obj))
+```
+
+## Add condition column in the object
+```{r add condition}
+# Extract condition
+temp <- LungMu_obj@meta.data %>% mutate(condition = case_when(
+    str_split_fixed(LungMu_obj@meta.data$dataset, "_", 8)[,8] == ""  ~ str_split_fixed(LungMu_obj@meta.data$dataset, "_", 8)[,6] ,
+    str_split_fixed(LungMu_obj@meta.data$dataset, "_", 8)[,8] != "" ~ str_split_fixed(LungMu_obj@meta.data$dataset, "_", 8)[,7]
+  )
+)
+
+LungMu_obj@meta.data$condition <- temp$condition
+```
+
+## Alter condition names inside the seurat object
+```{r alter condition name}
+LungMu_obj$condition[LungMu_obj$condition=="CD"] <- "Control"
+LungMu_obj$condition[LungMu_obj$condition=="HFD"] <- "PH-cHFpEF"
+```
+
+
+## Color vectors - Define color palete
+```{r color palette}
+cols<- pal_igv()(51)
+names(cols) <- c(0:50)
+
+colDataset <- c("#FF7F0EFF","#17BECFFF", "#BB0021FF", "#00CC33FF", "#3B4992FF", "#4775FFFF", "#990080FF", "#AEC7E8FF","#FFBB78FF","#1B1919FF")
+names(colDataset) <- unique(LungMu_obj$dataset)
+
+colCond <- c("#631879FF","#BCBD22FF")
+names(colCond) <- unique(LungMu_obj$condition)
+```
+
+## Investigate Quality Control (QC) metrics 
+
+### Check nuclei and gene counts for all samples{.tabset}
+#### Nuclei counts per condition
+```{r Nuclei counts per condition}
+# Visualize the number of nuclei counts per condition
+LungMu_obj@meta.data %>% 
+    ggplot(aes(x=condition, fill=condition)) + 
+    geom_bar() +
+    scale_fill_manual(values=colCond) +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    theme(plot.title = element_text(hjust=0.5, face="bold"))
+```
+
+#### Maximum gene counts
+```{r maximum gene counts}
+mouse_data <- LungMu_obj@meta.data
+
+gene_counts <-as.data.frame(mouse_data %>% group_by(dataset) %>% summarise(max_gene_counts = max(nFeature_RNA)))
+
+p<- ggplot(gene_counts, aes(x=dataset, y=max_gene_counts, fill = dataset)) + 
+  geom_bar(stat = "identity")+
+  scale_fill_manual(values = colDataset) +
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+print(p)
+
+# Convert to named vector
+geneCountsPerDataset <- as.character(gene_counts$max_gene_counts)
+names(geneCountsPerDataset) <- gene_counts$dataset
+print(geneCountsPerDataset)
+```
+
+#### Nuclei counts per dataset
+```{r Nuclei counts per dataset}
+# Visualize the number of cell counts per condition
+LungMu_obj@meta.data %>% 
+    ggplot(aes(x=dataset, fill=dataset)) + 
+    geom_bar() +
+    scale_fill_manual(values=colDataset) +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    theme(plot.title = element_text(hjust=0.5, face="bold"))
+```
+
+## Identification of highly variable features
+```{r highly variable features} 
+LungMu_obj <- FindVariableFeatures(LungMu_obj, selection.method = "vst", nfeatures = 2000)
+```
+
+## Nuclei and gene expression distributions {.tabset}
+### UMIs - transcripts per dataset
+```{r UMIs - transcripts per dataset}
+LungMu_obj@meta.data %>% 
+    ggplot(aes(color=dataset, x=nCount_RNA, fill= dataset)) +
+    scale_fill_manual(values=colDataset) +
+    geom_density(alpha = 0.2) + 
+    scale_x_log10() + 
+    theme_classic() +
+    ylab("Cell density") +
+    geom_vline(xintercept = 300)
+```
+
+### Gene distribution per nuclei
+```{r Gene distribution per nuclei}
+# Visualize the distribution of genes detected per nuclei via histogram
+LungMu_obj@meta.data %>% 
+  	ggplot(aes(color=dataset, x=nFeature_RNA, fill= dataset)) + 
+  scale_fill_manual(values=colDataset) +
+  	geom_density(alpha = 0.2) + 
+    	scale_x_log10() +
+  	theme_classic() +
+  	geom_vline(xintercept = 150)
+```
+
+### Genes detected per UMI
+```{r genes detected per UMI}
+# Add number of genes per UMI for each nuclei to metadata - measures complexity of dataset 
+LungMu_obj$log10GenesPerUMI <- log10(LungMu_obj$nFeature_RNA) / log10(LungMu_obj$nCount_RNA)
+
+# Visualize the overall complexity of the gene expression by visualizing the genes detected per UMI (novelty score)
+LungMu_obj@meta.data %>%
+    ggplot(aes(x=log10GenesPerUMI, color = dataset, fill=dataset)) +
+    scale_fill_manual(values=colDataset) +
+    geom_density(alpha = 0.2) +
+    theme_classic() +
+    geom_vline(xintercept = 0.88)
+```
+
+## Compute and visualize number of nuclei per sample via a pie chart
+```{r number of nuclei/sample}
+cells_per_dataset <- table(LungMu_obj$dataset)
+cells_per_datasetDF <-  data.frame(
+  sample=names(cells_per_dataset) ,  
+  cells=as.vector(cells_per_dataset)
+  )
+
+# Compute percentages
+cells_per_datasetDF$fraction <- cells_per_datasetDF$cells / sum(cells_per_datasetDF$cells)
+
+# Compute the cumulative percentages (top of each rectangle)
+cells_per_datasetDF$ymax <- cumsum(cells_per_datasetDF$fraction)
+
+# Compute the bottom of each rectangle
+cells_per_datasetDF$ymin <- c(0, head(cells_per_datasetDF$ymax, n=-1))
+
+# Compute label position
+cells_per_datasetDF$labelPosition <- (cells_per_datasetDF$ymax + cells_per_datasetDF$ymin) / 2
+
+# Compute a good label
+cells_per_datasetDF$label <- paste0(cells_per_datasetDF$patient, "\n value: ", cells_per_datasetDF$nuclei)
+
+# Make the plot
+p<- ggplot(cells_per_datasetDF, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=sample)) +
+  geom_rect() +
+  scale_fill_manual(values = colDataset) +
+  coord_polar(theta="y", start = 0) +
+  xlim(c(2, 4)) +
+  theme_void() +
+  annotate(geom = 'text', x = 2, y = 0, label = as.character(dim(LungMu_obj)[2]), size = 10)
+p
+
+```
+
+## Find median number of nuclei and genes per nuclei before filtering
+```{r  median number of nuclei before filtering}
+median_nuclei_per_sample <- LungMu_obj@meta.data %>% group_by(dataset) %>% summarise(across(nCount_RNA, median))
+median_nuclei_per_sample
+```
+
+```{r median number of genes before filtering}
+median_genes_per_sample <- LungMu_obj@meta.data %>% group_by(dataset) %>% summarise(across(nFeature_RNA, median))
+median_genes_per_sample
+```
+
+## Nuclei and gene distributions per condition {.tabset}
+### UMIs - transcripts per condition
+```{r UMIs - transcripts per condition}
+LungMu_obj@meta.data %>% 
+    ggplot(aes(color=condition, x=nCount_RNA, fill= condition)) +
+    scale_fill_manual(values=colCond) +
+    geom_density(alpha = 0.2) + 
+    scale_x_log10() + 
+    theme_classic() +
+    ylab("Cell density") +
+    geom_vline(xintercept = 200)
+```
+
+### Gene distribution per condition
+```{r Gene distribution per condition}
+# Visualize the distribution of genes detected per cell via histogram
+LungMu_obj@meta.data %>% 
+  	ggplot(aes(color=condition, x=nFeature_RNA, fill= condition)) + 
+  scale_fill_manual(values=colCond) +
+  	geom_density(alpha = 0.2) + 
+  	theme_classic() +
+  	scale_x_log10() + 
+  	geom_vline(xintercept = 110)
+```
+
+### novelty score
+```{r novelty score}
+
+# Visualize the overall complexity of the gene expression by visualizing the genes detected per UMI (novelty score)
+LungMu_obj@meta.data %>%
+    ggplot(aes(x=log10GenesPerUMI, color = condition, fill=condition)) +
+    scale_fill_manual(values=colCond) +
+    geom_density(alpha = 0.2) +
+    theme_classic() +
+    geom_vline(xintercept = 0.86)
+
+```
+
+
+## Exclude HFD-1 sample from the analysis as it has an extremely low median of nuclei and genes per nuclei 
+
+```{r}
+LungMu_obj <- subset(LungMu_obj, subset = (dataset == '340821_17-4_20240119_Mu_nucseq_lung_HFD_1'), invert = TRUE)
+```
+
+## Plot QC metrics again {.tabset}
+###  UMIs - transcripts per nuclei
+```{r UMIs - transcripts per nuclei}
+LungMu_obj@meta.data %>% 
+    ggplot(aes(color=dataset, x=nCount_RNA, fill= dataset)) +
+    scale_fill_manual(values=colDataset) +
+    geom_density(alpha = 0.2) + 
+    scale_x_log10() + 
+    theme_classic() +
+    ylab("Cell density")
+```
+
+### Gene distribution per nuclei
+```{r CLEANED : Gene distribution per nuclei}
+# Visualize the distribution of genes detected per cell via histogram
+LungMu_obj@meta.data %>% 
+  	ggplot(aes(color=dataset, x=nFeature_RNA, fill= dataset)) + 
+  scale_fill_manual(values=colDataset) +
+  	geom_density(alpha = 0.2) + 
+    	scale_x_log10() +
+  	theme_classic() 
+
+```
+
+### genes detected per UMI
+```{r CLEANED : gene expression complexity}
+# Add number of genes per UMI for each cell to metadata - measures complexity of dataset 
+LungMu_obj$log10GenesPerUMI <- log10(LungMu_obj$nFeature_RNA) / log10(LungMu_obj$nCount_RNA)
+
+# Visualize the overall complexity of the gene expression by visualizing the genes detected per UMI (novelty score)
+LungMu_obj@meta.data %>%
+    ggplot(aes(x=log10GenesPerUMI, color = dataset, fill=dataset)) +
+    scale_fill_manual(values=colDataset) +
+    geom_density(alpha = 0.2) +
+    scale_x_log10() +
+    theme_classic()
+```
+
+## Compute and visualize number of nuclei per sample via a pie chart
+```{r CLEANED : number of nuclei/sample}
+cells_per_dataset <- table(LungMu_obj$dataset)
+cells_per_datasetDF <-  data.frame(
+  sample=names(cells_per_dataset) ,  
+  cells=as.vector(cells_per_dataset)
+  )
+
+# Compute percentages
+cells_per_datasetDF$fraction <- cells_per_datasetDF$cells / sum(cells_per_datasetDF$cells)
+
+# Compute the cumulative percentages (top of each rectangle)
+cells_per_datasetDF$ymax <- cumsum(cells_per_datasetDF$fraction)
+
+# Compute the bottom of each rectangle
+cells_per_datasetDF$ymin <- c(0, head(cells_per_datasetDF$ymax, n=-1))
+
+# Compute label position
+cells_per_datasetDF$labelPosition <- (cells_per_datasetDF$ymax + cells_per_datasetDF$ymin) / 2
+
+# Compute a good label
+cells_per_datasetDF$label <- paste0(cells_per_datasetDF$patient, "\n value: ", cells_per_datasetDF$nuclei)
+
+# Make the plot
+p<- ggplot(cells_per_datasetDF, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=sample)) +
+  geom_rect() +
+  scale_fill_manual(values = colDataset) +
+  coord_polar(theta="y", start = 0) +
+  xlim(c(2, 4)) +
+  theme_void() +
+  annotate(geom = 'text', x = 2, y = 0, label = as.character(dim(LungMu_obj)[2]), size = 10)
+p
+```
+
+## Save processed seurat object
+```{r save processed object}
+saveRDS(LungMu_obj, file=paste0(output_obj_dir, "340821_Mu_Lung_snRNAseq_merged_preprocessed.rds" ))
+```
+
+## Session Information
+````{r Session Information}
+sessionInfo()
+````
+
 
