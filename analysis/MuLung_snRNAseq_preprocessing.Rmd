@@ -1,0 +1,53 @@
+---
+title: "MuLung_snRNAseq_preprocessing"
+author: "Iliana Papadopoulou"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    self_contained: yes
+    code_folding: show
+    number_sections: no
+    toc: yes
+    toc_depth: 3
+    toc_float: true
+    collapsed: no
+    smooth_scroll: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = c("png", "pdf"))
+set.seed(1000)
+options(future.globals.maxSize = 8000 * 1024^2)
+```
+
+## load R libraries
+```{r libraries}
+suppressPackageStartupMessages({
+  library(plyr)
+  library(patchwork)
+  library(Seurat)
+  library(stringr)
+  library(dplyr)
+  library(tidyverse)
+  library(here)
+  library(openxlsx)
+  library(zeallot)
+  library(ggsci)
+  library(openxlsx)
+  library(pheatmap)
+  library(stringr)
+  library(viridis)
+  library(scCustomize)
+  library(stringr)
+  library(gridExtra)
+  library(grid)
+})
+```
+
+# 1. Preprocessing of murine lung samples from healthy mice vs mice with pulmonary hypertension and HFpEF
+## Set directory
+```{r set directory}
+basedir <- here()
+```
+
