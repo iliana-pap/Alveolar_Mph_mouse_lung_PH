@@ -1,0 +1,415 @@
+---
+title: "MuLung_snRNAseq_analysis"
+author: "Iliana Papadopoulou"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    self_contained: yes
+    code_folding: show
+    number_sections: no
+    toc: yes
+    toc_depth: 3
+    toc_float: true
+    collapsed: no
+    smooth_scroll: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = c("png", "pdf"))
+set.seed(1000)
+options(future.globals.maxSize = 8000 * 1024^2)
+```
+
+# 2. Analysis of murine lung samples from healthy mice vs mice with HFpEF in Pulmonary Hypertension (PH)
+
+## Load R libraries
+```{r libraries}
+suppressPackageStartupMessages({
+  library(plyr)
+  library(patchwork)
+  library(Seurat)
+  library(stringr)
+  library(dplyr)
+  library(tidyverse)
+  library(here)
+  library(openxlsx)
+  library(zeallot)
+  library(ggsci)
+  library(openxlsx)
+  library(pheatmap)
+  library(stringr)
+  library(viridis)
+  library(scCustomize)
+  library(stringr)
+  library(gridExtra)
+  library(grid)
+})
+```
+
+## Set directory
+```{r set directory}
+basedir <- here()
+source(paste0(basedir,'/analysis/Lung_snRNAseq_functions.R'), echo=FALSE)
+
+# Create directory to save preprocessed seurat objects
+output_obj_dir <- paste0(basedir,"/data/Output/")
+dir.create(output_obj_dir)
+```
+
+## Read preprocessed murine lung seurat object
+```{r}
+LungMu_obj <- readRDS(file= paste0(output_obj_dir, "340821_Mu_Lung_snRNAseq_merged_preprocessed.rds" ))
+```
+
+## Color vectors - Define color palete
+```{r color palete}
+cols<- pal_igv()(51)
+names(cols) <- c(0:50)
+
+colDataset <- c("#FF7F0EFF","#17BECFFF", "#BB0021FF", "#00CC33FF", "#3B4992FF", "#4775FFFF", "#990080FF", "#AEC7E8FF","#FFBB78FF","#1B1919FF")
+names(colDataset) <- unique(LungMu_obj$dataset)
+
+colCond <- c("#631879FF","#FF7F0EFF") #"#BCBD22FF"
+names(colCond) <- unique(LungMu_obj$condition)
+```
+
+
+## Preprocessing
+```{r preprocessing}
+resolution <- c(0.1, 0.15,0.2, 0.25,0.3, 0.4, 0.5, 0.6, 0.8, 1., 1.2, 1.5, 1.7, 2, 2.2, 2.4, 2.6)
+LungMu_obj  <- preprocessing(LungMu_obj,resolution)
+```
+
+## Cell type annotation
+```{r annotation}
+LungMu_obj$label <- "other"
+LungMu_obj$label[which(LungMu_obj$RNA_snn_res.0.15 %in% c("0"))] <- "AT2 Epithelial"
+LungMu_obj$label[which(LungMu_obj$RNA_snn_res.0.15 %in% c("1"))] <-  "AT1 Epithelial"
+LungMu_obj$label[which(LungMu_obj$RNA_snn_res.0.15 %in% c("2"))] <- "Bas/SMG duct Epithelial 1"
+LungMu_obj$label[which(LungMu_obj$RNA_snn_res.0.15 %in% c("3"))] <- "Fibroblasts"
+LungMu_obj$label[which(LungMu_obj$RNA_snn_res.0.15 %in% c("4"))] <- "Arterial/Cap pulmonary EC"
+LungMu_obj$label[which(LungMu_obj$RNA_snn_res.0.15 %in% c("5"))] <- "Alveolar Mph"
+LungMu_obj$label[which(LungMu_obj$RNA_snn_res.0.15 %in% c("6"))] <- "Bas/SMG duct Epithelial 2"
+LungMu_obj$label[which(LungMu_obj$RNA_snn_res.0.15 %in% c("7"))] <- "Cil Epithelial"
+LungMu_obj$label[which(LungMu_obj$RNA_snn_res.0.15 %in% c("8"))] <-  "Immune cells"
+LungMu_obj$label[which(LungMu_obj$RNA_snn_res.0.15 %in% c("9"))] <- "aCap pulmonary EC"
+LungMu_obj$label[which(LungMu_obj$RNA_snn_res.0.15 %in% c("10"))] <-  "Mesothelial"
+LungMu_obj$label[which(LungMu_obj$RNA_snn_res.0.15 %in% c("11"))] <-  "VSMC/Pericytes"
+
+colLab <- pal_igv()(length(unique(LungMu_obj$label)))
+names(colLab) <- unique(LungMu_obj$label)
+
+colLab["AT2 Epithelial"] <-"#92C5DE"
+colLab["Bas/SMG duct Epithelial 1"] <-"#F4A582" 
+colLab["Bas/SMG duct Epithelial 2"] <-"#FDDBC7" 
+colLab["AT1 Epithelial"] <-"#9467BDFF"
+colLab["Fibroblasts"] <- "#FF1463FF"
+colLab["Arterial/Cap pulmonary EC"] <-"#990080FF"
+colLab["Alveolar Mph"] <-"#00CC33FF"
+colLab["Cil Epithelial"] <- "#009966FF"
+colLab["Immune cells"] <- "#053061"
+colLab["aCap pulmonary EC"] <- "#0099CCFF"
+colLab["Mesothelial"] <- "#67001F"
+colLab["VSMC/Pericytes"] <- "#E7C76FFF"
+
+```
+
+## Sample Visualization and Clustering {.tabset}
+### Figure 2A - cluster annotation
+```{r Figure 2A - cluster annotation}
+
+colLab_reorder <- colLab[order(factor(names(colLab), levels = c("Arterial/Cap pulmonary EC","aCap pulmonary EC",
+                                                                "Bas/SMG duct Epithelial 1","Bas/SMG duct Epithelial 2","AT1 Epithelial","AT2 Epithelial", "Cil Epithelial",
+                                                                "Fibroblasts","VSMC/Pericytes","Mesothelial",
+                                                                "Alveolar Mph", "Immune cells")))]
+
+DimPlot(LungMu_obj, reduction = "umap", group.by = "label", cols = colLab_reorder, order =  names(rev(colLab_reorder)))+
+  theme_bw() +
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    axis.text = element_blank(), axis.ticks = element_blank(), 
+    panel.grid.minor = element_blank()) +
+  ggtitle("") +
+  xlab("UMAP1") +
+  ylab("UMAP2")
+
+```
+
+### Figure 2B - Umap per condition
+```{r Umap per condition}
+DimPlot(LungMu_obj, reduction = "umap", group.by = paste0("condition"), cols = colCond)+
+  theme_bw() +
+  theme( axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    panel.grid.minor = element_blank()) +
+  ggtitle("") +
+  xlab("UMAP1") +
+  ylab("UMAP2")
+
+```
+
+### Umap per dataset
+```{r Umap per dataset, fig.width=9}
+DimPlot(LungMu_obj, reduction = "umap", group.by = paste0("dataset"), cols = colDataset)+
+  theme_bw() +
+  theme( axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    axis.text = element_blank(), axis.ticks = element_blank(), 
+    panel.grid.minor = element_blank()) +
+  ggtitle("") +
+  xlab("UMAP1") +
+  ylab("UMAP2")
+```  
+
+## Compute DE genes for all clusters
+```{r compute DE genes for all clusters}
+Idents(LungMu_obj) <- "label"
+de.markers <- FindAllMarkers(LungMu_obj, logfc.threshold = 0.25,min.pct = 0.1,only.pos = TRUE)
+
+# plot DE genes top 10 avg logFC
+analysis_type <- "total_marker_genes"
+
+genes <- data.frame(gene=rownames(LungMu_obj)) %>% 
+    mutate(geneID=gsub("^.*\\.", "", gene)) 
+
+Selgenes <- c("Hey1", "Cxcl12", "Notch4", "Edn1",
+              "Ednrb",
+              "Muc5b","Krt19","Dlk2", 
+              "Klf5","Hes1","Mgst1", "Klf15",
+              "Clic5", "Spock2", "Ager", "Hopx", 
+             "Sftpb", "Sftpa1", "Etv5", "Acsl4",
+              "Foxj1", "Caps2", "Ccdc151", "Dlec1",
+             "Col1a2" , "Col1a1", "Pdgfra",
+             "Myh11", "Tagln", "Pdgfrb", "Carmn",
+              "Muc16", "Msln", "Wt1", "Bnc1",
+              "Itgax", "Marco", "Siglecf","Chil3",
+              "F13a1","Ighm", "Il7r", "Klrd1"
+              )
+
+Selgenes_df <- filter(genes, geneID %in% Selgenes)
+colnames(Selgenes_df) <- c('geneID','gene')
+# order by Selgenes
+Selgenes_df <-Selgenes_df[match(Selgenes, Selgenes_df$gene),]
+```
+
+## Explore cell populations{.tabset}
+### Figure S2A - Visualize DE genes over all cell populations
+```{r Visualize DE genes over all cell populations, fig.height = 12}
+Idents(LungMu_obj) <- LungMu_obj$label
+pOut <- avgHeatmapTotalHeatmap(seurat = LungMu_obj, selGenes = Selgenes_df,
+                  colVecIdent = colLab_reorder, 
+                  ordVec=levels(LungMu_obj),
+                  gapVecR=c(4,5,8, 12,16,20, 24, 27, 31, 35, 39 ), gapVecC=NULL,cc=F,
+                  cr=F, condCol=F,
+                  path = GeneExprDir,
+                  analysis_type = analysis_type,
+                  len = 0)
+
+
+```
+
+### Figure S2B - Differences per condition
+```{r Differences per condition, fig.width= 9}
+DimPlot(LungMu_obj,split.by = "condition",cols = colLab, group.by = "label") 
+```
+
+### Figure S3C - Plot distribution of Pulmonary cells in control mice
+```{r distribution of Pulmonary cells in control  mice}
+percentage_matrix  <- as.data.frame(LungMu_obj@meta.data %>% dplyr::count(condition, label) %>% dplyr::group_by(condition) %>% mutate(cell_percentage= prop.table(n) * 100)) # RNA_snn_res.0.2
+
+distr_df <- percentage_matrix[percentage_matrix$condition == "Control",]
+distr_df$condition <- NULL
+names(distr_df)[names(distr_df) == 'label'] <- 'sample'
+names(distr_df)[names(distr_df) == 'n'] <- 'cells'
+names(distr_df)[names(distr_df) == 'cell_percentage'] <- 'fraction'
+distr_df$cell_percentage <- distr_df$fraction / 100
+
+cells_per_datasetDF <- distr_df
+# Compute the cumulative percentages (top of each rectangle)
+cells_per_datasetDF$ymax <- cumsum(cells_per_datasetDF$fraction)
+
+# Compute the bottom of each rectangle
+cells_per_datasetDF$ymin <- c(0, head(cells_per_datasetDF$ymax, n=-1))
+
+# Compute label position
+cells_per_datasetDF$labelPosition <- (cells_per_datasetDF$ymax + cells_per_datasetDF$ymin) / 2
+
+# Compute a good label
+cells_per_datasetDF$label <- paste0(cells_per_datasetDF$patient, "\n value: ", cells_per_datasetDF$nuclei)
+
+# Make the plot
+p<- ggplot(cells_per_datasetDF, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=sample)) +
+  geom_rect() +
+  scale_fill_manual(values = colLab_reorder) +
+  coord_polar(theta="y", start = 0) +
+  xlim(c(2, 4)) +
+  theme_void() +
+  annotate(geom = 'text', x = 2, y = 0, label = as.character(dim(subset(LungMu_obj,condition == "Control" ))[2]), size = 10)
+p
+```
+
+### Figure S3C - Plot distribution of Pulmonary cells in HFD mice
+```{r distribution of Pulmonary cells in HFD  mice}
+percentage_matrix  <- as.data.frame(LungMu_obj@meta.data %>% dplyr::count(condition, label) %>% dplyr::group_by(condition) %>% mutate(cell_percentage= prop.table(n) * 100)) 
+
+distr_df <- percentage_matrix[percentage_matrix$condition == "PH-cHFpEF",]
+distr_df$condition <- NULL
+names(distr_df)[names(distr_df) == 'label'] <- 'sample'
+names(distr_df)[names(distr_df) == 'n'] <- 'cells'
+names(distr_df)[names(distr_df) == 'cell_percentage'] <- 'fraction'
+distr_df$cell_percentage <- distr_df$fraction / 100
+
+cells_per_datasetDF <- distr_df
+# Compute the cumulative percentages (top of each rectangle)
+cells_per_datasetDF$ymax <- cumsum(cells_per_datasetDF$fraction)
+
+# Compute the bottom of each rectangle
+cells_per_datasetDF$ymin <- c(0, head(cells_per_datasetDF$ymax, n=-1))
+
+# Compute label position
+cells_per_datasetDF$labelPosition <- (cells_per_datasetDF$ymax + cells_per_datasetDF$ymin) / 2
+
+# Compute a good label
+cells_per_datasetDF$label <- paste0(cells_per_datasetDF$patient, "\n value: ", cells_per_datasetDF$nuclei)
+
+# Make the plot
+p<- ggplot(cells_per_datasetDF, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=sample)) +
+  geom_rect() +
+  scale_fill_manual(values = colLab_reorder) +
+  coord_polar(theta="y", start = 0) +
+  xlim(c(2, 4)) +
+  theme_void() +
+  annotate(geom = 'text', x = 2, y = 0, label = as.character(dim(subset(LungMu_obj,condition == "PH-cHFpEF" ))[2]), size = 10)
+p
+```
+
+### Stacked Barplot : Cell type abundance per sample
+```{r  Cell type abundance per sample, fig.height= 9}
+# Run successfully
+percentage_matrix  <- as.data.frame(LungMu_obj@meta.data %>% count(dataset, label) %>% group_by(dataset) %>% mutate(cell_percentage= prop.table(n) * 100))
+
+# Fix order of celltypes
+percentage_matrix$label  <- factor (percentage_matrix$label ,
+          levels = names(colLab_reorder),
+          ordered = TRUE)
+
+p<- ggplot(percentage_matrix,    # Calculate percent within each dataset
+       aes(dataset, cell_percentage, fill=label)) +
+  geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        axis.line = element_line(), # colour = "black"
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) +
+  geom_density() + # color = "black"
+  labs(y= "Cell type (%)" ) +
+  scale_fill_manual(values = colLab_reorder)
+p
+```
+
+## Classify cell types into endothelial, epithelial, immune and stroma cells
+```{r plot cells per endothelial, epithelial, imuune and stroma cells }
+LungMu_obj$type <- "Other"
+LungMu_obj$type[which(LungMu_obj$label %in% c("Arterial/Cap pulmonary EC", "aCap pulmonary EC"))] <- "Endothelial"
+LungMu_obj$type[which(LungMu_obj$label %in% c("Bas/SMG duct Epithelial 1", "Bas/SMG duct Epithelial 2","AT2 Epithelial", "AT1 Epithelial", "Cil Epithelial"))] <- "Epithelial"
+LungMu_obj$type[which(LungMu_obj$label %in% c("Immune cells", "Alveolar Mph"))] <- "Immune"
+LungMu_obj$type[which(LungMu_obj$label %in% c("Fibroblasts", "Mesothelial", "VSMC/Pericytes"))] <- "Stroma"
+
+colType <- c("#374E55FF", "#D6604D", "#79AF97FF", "#0099CCFF")
+names(colType) <- unique(LungMu_obj$type)
+
+DimPlot(LungMu_obj, reduction = "umap", group.by = "type", cols = colType)+
+  theme_bw() +
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    axis.text = element_blank(), axis.ticks = element_blank(), 
+    panel.grid.minor = element_blank()) +
+  ggtitle("") +
+  xlab("UMAP1") +
+  ylab("UMAP2")
+```
+
+## Find differences per condition
+```{r}
+for (cellType in unique(LungMu_obj$label)){
+  LungMu_obj_sub <- subset(LungMu_obj, label == cellType)
+  Idents(LungMu_obj_sub) <- "condition"
+  de.markers <- FindAllMarkers(LungMu_obj_sub, logfc.threshold = 0.25,min.pct = 0.1,only.pos = TRUE)
+}
+
+LungMu_obj_sub <- subset(LungMu_obj, label == "Bas/SMG duct Epithelial 1")
+Idents(LungMu_obj_sub) <- "condition"
+de.markers <- FindAllMarkers(LungMu_obj_sub, logfc.threshold = 0.25,min.pct = 0.1,only.pos = TRUE)
+
+LungMu_obj_sub <- subset(LungMu_obj, label == "Bas/SMG duct Epithelial 2")
+Idents(LungMu_obj_sub) <- "condition"
+de.markers <- FindAllMarkers(LungMu_obj_sub, logfc.threshold = 0.25,min.pct = 0.1,only.pos = TRUE)
+
+LungMu_obj_sub <- subset(LungMu_obj, label == "VSMC/Pericytes")
+Idents(LungMu_obj_sub) <- "condition"
+de.markers <- FindAllMarkers(LungMu_obj_sub, logfc.threshold = 0.25,min.pct = 0.1,only.pos = TRUE)
+
+LungMu_obj_sub <- subset(LungMu_obj, label == "Arterial/Cap pulmonary EC")
+Idents(LungMu_obj_sub) <- "condition"
+de.markers <- FindAllMarkers(LungMu_obj_sub, logfc.threshold = 0.25,min.pct = 0.1,only.pos = TRUE)
+```
+
+## Compute gene per condition in each cell type
+```{r compute gene per condition in each cell type} 
+analysis_type <- "marker_genes_all_among_conditions"
+type <- "All_cells"
+Selgenes <- c(
+              "Epb41", "Mcf2l","Mcam","Glp1r", "Sox11", "Samd5", "Vwf", "Cd93",
+              "Plod1", "Rin3", "Tmx3", "Rock2", "Csrnp1", "Sema6a", "Mapt", "Arap2", "Fmo1", "Meis1", "Gnaq",
+              "Muc5b","Pim3", "Depp1","Nrarp","Tob2", "Nupr1", "Nectin2",
+              "Rassf9",  "Reep6", "Cstf3", "Utp11","Fdx1", "Aldh3a2",
+              "Tpcn2", "Bcar3",  "Pxdc1", "Akap5", "Agrn","Nt5e","Prkag3","Ager", "Dlg4", "Gprc5a", "Ankrd1",
+              "Ctsh",  "Lrrk2", "Pmvk", "Slc34a2",  "Elovl1", "Lpcat1",
+              "Hsph1", "Ahsa2", "Tuba1a","Mt1",
+              "Adamtsl2", "Dpep1","Rgs2", "Plekha6","Atp1a2", "Slc7a10", "Inmt",
+              "Tagln","Myh11",  "Pdgfrb", "Carmn",
+              "Timp2","Cys1","Gas6", "Gbp3" ,
+              "Fkbp5", "Tfec", "Ppt1", "Ap3d1", "Fcho2","Fuca1", "Chil3",  "Vim", "Mmp19", "Cebpb","Marco","Ddb1","Sgk1", "Colgalt1","Galnt3","Cd44", "Cotl1","Plk3",
+              "Rell1", "Ms4a6c", "Tbc1d8","Cd83", "Cd226","Got1","Pmaip1","Ighm","Stap1"
+             )
+
+Idents(LungMu_obj) <- LungMu_obj$condition
+Mu_CD <- subset(LungMu_obj, condition  == "Control" )
+Mu_HFD <- subset(LungMu_obj, condition  == "PH-cHFpEF")
+ 
+avg_matrix_CD<-compute_avg_gene_expression_matrix(Mu_CD,Selgenes,names(colLab_reorder))
+avg_matrix_HFD<-compute_avg_gene_expression_matrix(Mu_HFD,Selgenes,names(colLab_reorder))
+```
+
+## Plots gene per condition in each cell type
+```{r gene per condition in each cell type, fig.height = 16, fig.width = 9}
+avgHeatmap2(Selgenes,avg_matrix_CD, avg_matrix_HFD,
+                      colVecIdent = colLab_reorder,colVecCond = colCond,
+                      gapVecR=NULL, gapVecC=NULL,cc=T,
+                      cr=F, condCol=F,
+                      type = type, folder_name =GeneExprDir)
+```
+
+
+## Save annotated object
+```{r save annotated object}
+saveRDS(LungMu_obj, file= paste0(output_obj_dir, "340821_Mu_Lung_snRNAseq_merged_annotated.rds" ))
+```
+
+## Session Information
+````{r Session Information}
+sessionInfo()
+````
+
+
+

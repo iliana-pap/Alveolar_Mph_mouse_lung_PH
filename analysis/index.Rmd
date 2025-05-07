@@ -10,5 +10,8 @@ editor_options:
 
 ### **Alveolar Macrophages in murine lung microenvironment during Pulmonary Hypertension (PH)** : 
 
-* Murine Lung landscape - data preprocessing :
+* Murine Murine Lung landscape - data preprocessing :
 [MuLung_snRNAseq_preprocessing.html](MuLung_snRNAseq_preprocessing.html)
+
+* Exploration of Murine Lung landscape - unbiased clustering, cell type annotation, gene expression differences : 
+[MuLung_snRNAseq_analysis.html](MuLung_snRNAseq_analysis.html)
