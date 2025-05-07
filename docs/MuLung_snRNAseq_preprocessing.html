@@ -514,15 +514,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomilianapapAlveolarMphmouselungPHtree5e281fe63ef1b6106ccb7adb2e8664d0dee12f24targetblank5e281fea">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomilianapapAlveolarMphmouselungPHtree32d33de80fca5eb19af542af6f4709ac8187f372targetblank32d33dea">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/tree/5e281fe63ef1b6106ccb7adb2e8664d0dee12f24" target="_blank">5e281fe</a>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/tree/32d33de80fca5eb19af542af6f4709ac8187f372" target="_blank">32d33de</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomilianapapAlveolarMphmouselungPHtree5e281fe63ef1b6106ccb7adb2e8664d0dee12f24targetblank5e281fea"
+id="strongRepositoryversionstrongahrefhttpsgithubcomilianapapAlveolarMphmouselungPHtree32d33de80fca5eb19af542af6f4709ac8187f372targetblank32d33dea"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -532,7 +532,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/tree/5e281fe63ef1b6106ccb7adb2e8664d0dee12f24" target="_blank">5e281fe</a>.
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/tree/32d33de80fca5eb19af542af6f4709ac8187f372" target="_blank">32d33de</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -548,6 +548,10 @@ were generated:
 <pre><code>
 Ignored files:
     Ignored:    .DS_Store
+    Ignored:    data/Output/
+
+Untracked files:
+    Untracked:  analysis/Lung_snRNAseq_functions.R
 
 </code></pre>
 <p>
@@ -599,6 +603,40 @@ Message
 Rmd
 </td>
 <td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/32d33de80fca5eb19af542af6f4709ac8187f372/analysis/MuLung_snRNAseq_preprocessing.Rmd" target="_blank">32d33de</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+<td>
+Perform quality control on murine samples
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/257493bf49f1369fc7fc269f0df51991f22691c1/docs/MuLung_snRNAseq_preprocessing.html" target="_blank">257493b</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
 <a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/5e281fe63ef1b6106ccb7adb2e8664d0dee12f24/analysis/MuLung_snRNAseq_preprocessing.Rmd" target="_blank">5e281fe</a>
 </td>
 <td>
@@ -618,8 +656,13 @@ Create project
 </div>
 </div>
 </div>
+<div
+id="preprocessing-of-murine-lung-samples-from-normal-diet-vs-mice-with-high-fat-diet-l-name-treatment-with-hfpef"
+class="section level1">
+<h1>1. Preprocessing of murine lung samples from normal diet vs mice
+with high fat diet + L-name treatment with HFpEF</h1>
 <div id="load-r-libraries" class="section level2">
-<h2>load R libraries</h2>
+<h2>Load R libraries</h2>
 <pre class="r"><code>suppressPackageStartupMessages({
   library(plyr)
   library(patchwork)
@@ -641,14 +684,447 @@ Create project
   library(grid)
 })</code></pre>
 </div>
-<div
-id="preprocessing-of-murine-lung-samples-from-healthy-mice-vs-mice-with-pulmonary-hypertension-and-hfpef"
-class="section level1">
-<h1>1. Preprocessing of murine lung samples from healthy mice vs mice
-with pulmonary hypertension and HFpEF</h1>
 <div id="set-directory" class="section level2">
 <h2>Set directory</h2>
-<pre class="r"><code>basedir &lt;- here()</code></pre>
+<pre class="r"><code>basedir &lt;- here()
+source(paste0(basedir,&#39;/analysis/Lung_snRNAseq_functions.R&#39;), echo=FALSE)
+
+# Create directory to save preprocessed seurat objects
+output_obj_dir &lt;- paste0(basedir,&quot;/data/Output/&quot;)
+dir.create(output_obj_dir)</code></pre>
+</div>
+<div id="read-lung-tissue-samples" class="section level2">
+<h2>Read lung tissue samples</h2>
+<pre class="r"><code>pattern &lt;- &quot;.*_seurat.*&quot;
+files &lt;- list.files(paste0(basedir,&quot;/data&quot;, &quot;/&quot;), pattern = pattern)
+LungMu_obj.list &lt;- c()
+for (f in files){
+  print(f)
+  LungMu_obj &lt;- readRDS(file = paste0(basedir,&quot;/data/&quot;,f))
+  LungMu_obj.list &lt;- c(LungMu_obj.list,LungMu_obj)
+}</code></pre>
+<pre><code>[1] &quot;340821_14-1_20240119_Mu_nucseq_lung_CD_1_seurat.rds&quot;
+[1] &quot;340821_15-2_20240119_Mu_nucseq_lung_CD_2_seurat.rds&quot;
+[1] &quot;340821_16-3_20240119_Mu_nucseq_lung_CD_3_seurat.rds&quot;
+[1] &quot;340821_17-4_20240119_Mu_nucseq_lung_HFD_1_seurat.rds&quot;
+[1] &quot;340821_18-5_20240119_Mu_nucseq_lung_HFD_2_seurat.rds&quot;
+[1] &quot;340821_19-6_20240119_Mu_nucseq_lung_HFD_3_seurat.rds&quot;
+[1] &quot;340821_20-7_20240119_Mu_nucseq_lung_HFD_4_seurat.rds&quot;</code></pre>
+</div>
+<div id="merged-samples-into-one-seurat-object" class="section level2">
+<h2>Merged samples into one seurat object</h2>
+<pre class="r"><code>LungMu_obj &lt;- merge(LungMu_obj.list[[1]], y = LungMu_obj.list[2:length(LungMu_obj.list)])
+print(dim(LungMu_obj))</code></pre>
+<pre><code>[1] 26178 17061</code></pre>
+</div>
+<div id="add-condition-column-in-the-object" class="section level2">
+<h2>Add condition column in the object</h2>
+<pre class="r"><code># Extract condition
+temp &lt;- LungMu_obj@meta.data %&gt;% mutate(condition = case_when(
+    str_split_fixed(LungMu_obj@meta.data$dataset, &quot;_&quot;, 8)[,8] == &quot;&quot;  ~ str_split_fixed(LungMu_obj@meta.data$dataset, &quot;_&quot;, 8)[,6] ,
+    str_split_fixed(LungMu_obj@meta.data$dataset, &quot;_&quot;, 8)[,8] != &quot;&quot; ~ str_split_fixed(LungMu_obj@meta.data$dataset, &quot;_&quot;, 8)[,7]
+  )
+)
+
+LungMu_obj@meta.data$condition &lt;- temp$condition</code></pre>
+</div>
+<div id="alter-condition-names-inside-the-seurat-object"
+class="section level2">
+<h2>Alter condition names inside the seurat object</h2>
+<pre class="r"><code>LungMu_obj$condition[LungMu_obj$condition==&quot;CD&quot;] &lt;- &quot;Control&quot;
+LungMu_obj$condition[LungMu_obj$condition==&quot;HFD&quot;] &lt;- &quot;PH-cHFpEF&quot;</code></pre>
+</div>
+<div id="color-vectors---define-color-palete" class="section level2">
+<h2>Color vectors - Define color palete</h2>
+<pre class="r"><code>cols&lt;- pal_igv()(51)
+names(cols) &lt;- c(0:50)
+
+colDataset &lt;- c(&quot;#FF7F0EFF&quot;,&quot;#17BECFFF&quot;, &quot;#BB0021FF&quot;, &quot;#00CC33FF&quot;, &quot;#3B4992FF&quot;, &quot;#4775FFFF&quot;, &quot;#990080FF&quot;, &quot;#AEC7E8FF&quot;,&quot;#FFBB78FF&quot;,&quot;#1B1919FF&quot;)
+names(colDataset) &lt;- unique(LungMu_obj$dataset)
+
+colCond &lt;- c(&quot;#631879FF&quot;,&quot;#BCBD22FF&quot;)
+names(colCond) &lt;- unique(LungMu_obj$condition)</code></pre>
+</div>
+<div id="investigate-quality-control-qc-metrics" class="section level2">
+<h2>Investigate Quality Control (QC) metrics</h2>
+<div id="check-nuclei-and-gene-counts-for-all-samples"
+class="section level3 tabset">
+<h3 class="tabset">Check nuclei and gene counts for all samples</h3>
+<div id="nuclei-counts-per-condition" class="section level4">
+<h4>Nuclei counts per condition</h4>
+<pre class="r"><code># Visualize the number of nuclei counts per condition
+LungMu_obj@meta.data %&gt;% 
+    ggplot(aes(x=condition, fill=condition)) + 
+    geom_bar() +
+    scale_fill_manual(values=colCond) +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    theme(plot.title = element_text(hjust=0.5, face=&quot;bold&quot;))</code></pre>
+<p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/Nuclei%20counts%20per%20condition-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="maximum-gene-counts" class="section level4">
+<h4>Maximum gene counts</h4>
+<pre class="r"><code>mouse_data &lt;- LungMu_obj@meta.data
+
+gene_counts &lt;-as.data.frame(mouse_data %&gt;% group_by(dataset) %&gt;% summarise(max_gene_counts = max(nFeature_RNA)))
+
+p&lt;- ggplot(gene_counts, aes(x=dataset, y=max_gene_counts, fill = dataset)) + 
+  geom_bar(stat = &quot;identity&quot;)+
+  scale_fill_manual(values = colDataset) +
+  theme(axis.line = element_line(colour = &quot;black&quot;),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+print(p)</code></pre>
+<p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/maximum%20gene%20counts-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># Convert to named vector
+geneCountsPerDataset &lt;- as.character(gene_counts$max_gene_counts)
+names(geneCountsPerDataset) &lt;- gene_counts$dataset
+print(geneCountsPerDataset)</code></pre>
+<pre><code> 340821_14-1_20240119_Mu_nucseq_lung_CD_1 
+                                   &quot;1534&quot; 
+ 340821_15-2_20240119_Mu_nucseq_lung_CD_2 
+                                   &quot;3083&quot; 
+ 340821_16-3_20240119_Mu_nucseq_lung_CD_3 
+                                   &quot;3952&quot; 
+340821_17-4_20240119_Mu_nucseq_lung_HFD_1 
+                                    &quot;119&quot; 
+340821_18-5_20240119_Mu_nucseq_lung_HFD_2 
+                                   &quot;3413&quot; 
+340821_19-6_20240119_Mu_nucseq_lung_HFD_3 
+                                   &quot;2891&quot; 
+340821_20-7_20240119_Mu_nucseq_lung_HFD_4 
+                                   &quot;1640&quot; </code></pre>
+</div>
+<div id="nuclei-counts-per-dataset" class="section level4">
+<h4>Nuclei counts per dataset</h4>
+<pre class="r"><code># Visualize the number of cell counts per condition
+LungMu_obj@meta.data %&gt;% 
+    ggplot(aes(x=dataset, fill=dataset)) + 
+    geom_bar() +
+    scale_fill_manual(values=colDataset) +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    theme(plot.title = element_text(hjust=0.5, face=&quot;bold&quot;))</code></pre>
+<p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/Nuclei%20counts%20per%20dataset-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+</div>
+<div id="identification-of-highly-variable-features"
+class="section level2">
+<h2>Identification of highly variable features</h2>
+<pre class="r"><code>LungMu_obj &lt;- FindVariableFeatures(LungMu_obj, selection.method = &quot;vst&quot;, nfeatures = 2000)</code></pre>
+</div>
+<div id="nuclei-and-gene-expression-distributions"
+class="section level2 tabset">
+<h2 class="tabset">Nuclei and gene expression distributions</h2>
+<div id="umis---transcripts-per-dataset" class="section level3">
+<h3>UMIs - transcripts per dataset</h3>
+<pre class="r"><code>LungMu_obj@meta.data %&gt;% 
+    ggplot(aes(color=dataset, x=nCount_RNA, fill= dataset)) +
+    scale_fill_manual(values=colDataset) +
+    geom_density(alpha = 0.2) + 
+    scale_x_log10() + 
+    theme_classic() +
+    ylab(&quot;Cell density&quot;) +
+    geom_vline(xintercept = 300)</code></pre>
+<p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/UMIs%20-%20transcripts%20per%20dataset-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="gene-distribution-per-nuclei" class="section level3">
+<h3>Gene distribution per nuclei</h3>
+<pre class="r"><code># Visualize the distribution of genes detected per nuclei via histogram
+LungMu_obj@meta.data %&gt;% 
+    ggplot(aes(color=dataset, x=nFeature_RNA, fill= dataset)) + 
+  scale_fill_manual(values=colDataset) +
+    geom_density(alpha = 0.2) + 
+        scale_x_log10() +
+    theme_classic() +
+    geom_vline(xintercept = 150)</code></pre>
+<p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/Gene%20distribution%20per%20nuclei-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="genes-detected-per-umi" class="section level3">
+<h3>Genes detected per UMI</h3>
+<pre class="r"><code># Add number of genes per UMI for each nuclei to metadata - measures complexity of dataset 
+LungMu_obj$log10GenesPerUMI &lt;- log10(LungMu_obj$nFeature_RNA) / log10(LungMu_obj$nCount_RNA)
+
+# Visualize the overall complexity of the gene expression by visualizing the genes detected per UMI (novelty score)
+LungMu_obj@meta.data %&gt;%
+    ggplot(aes(x=log10GenesPerUMI, color = dataset, fill=dataset)) +
+    scale_fill_manual(values=colDataset) +
+    geom_density(alpha = 0.2) +
+    theme_classic() +
+    geom_vline(xintercept = 0.88)</code></pre>
+<p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/genes%20detected%20per%20UMI-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div
+id="compute-and-visualize-number-of-nuclei-per-sample-via-a-pie-chart"
+class="section level2">
+<h2>Compute and visualize number of nuclei per sample via a pie
+chart</h2>
+<pre class="r"><code>cells_per_dataset &lt;- table(LungMu_obj$dataset)
+cells_per_datasetDF &lt;-  data.frame(
+  sample=names(cells_per_dataset) ,  
+  cells=as.vector(cells_per_dataset)
+  )
+
+# Compute percentages
+cells_per_datasetDF$fraction &lt;- cells_per_datasetDF$cells / sum(cells_per_datasetDF$cells)
+
+# Compute the cumulative percentages (top of each rectangle)
+cells_per_datasetDF$ymax &lt;- cumsum(cells_per_datasetDF$fraction)
+
+# Compute the bottom of each rectangle
+cells_per_datasetDF$ymin &lt;- c(0, head(cells_per_datasetDF$ymax, n=-1))
+
+# Compute label position
+cells_per_datasetDF$labelPosition &lt;- (cells_per_datasetDF$ymax + cells_per_datasetDF$ymin) / 2
+
+# Compute a good label
+cells_per_datasetDF$label &lt;- paste0(cells_per_datasetDF$patient, &quot;\n value: &quot;, cells_per_datasetDF$nuclei)
+
+# Make the plot
+p&lt;- ggplot(cells_per_datasetDF, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=sample)) +
+  geom_rect() +
+  scale_fill_manual(values = colDataset) +
+  coord_polar(theta=&quot;y&quot;, start = 0) +
+  xlim(c(2, 4)) +
+  theme_void() +
+  annotate(geom = &#39;text&#39;, x = 2, y = 0, label = as.character(dim(LungMu_obj)[2]), size = 10)
+p</code></pre>
+<p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/number%20of%20nuclei/sample-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div
+id="find-median-number-of-nuclei-and-genes-per-nuclei-before-filtering"
+class="section level2">
+<h2>Find median number of nuclei and genes per nuclei before
+filtering</h2>
+<pre class="r"><code>median_nuclei_per_sample &lt;- LungMu_obj@meta.data %&gt;% group_by(dataset) %&gt;% summarise(across(nCount_RNA, median))
+median_nuclei_per_sample</code></pre>
+<pre><code># A tibble: 7 × 2
+  dataset                                   nCount_RNA
+  &lt;chr&gt;                                          &lt;dbl&gt;
+1 340821_14-1_20240119_Mu_nucseq_lung_CD_1         521
+2 340821_15-2_20240119_Mu_nucseq_lung_CD_2        1152
+3 340821_16-3_20240119_Mu_nucseq_lung_CD_3        2513
+4 340821_17-4_20240119_Mu_nucseq_lung_HFD_1         81
+5 340821_18-5_20240119_Mu_nucseq_lung_HFD_2       1426
+6 340821_19-6_20240119_Mu_nucseq_lung_HFD_3       1157
+7 340821_20-7_20240119_Mu_nucseq_lung_HFD_4        479</code></pre>
+<pre class="r"><code>median_genes_per_sample &lt;- LungMu_obj@meta.data %&gt;% group_by(dataset) %&gt;% summarise(across(nFeature_RNA, median))
+median_genes_per_sample</code></pre>
+<pre><code># A tibble: 7 × 2
+  dataset                                   nFeature_RNA
+  &lt;chr&gt;                                            &lt;dbl&gt;
+1 340821_14-1_20240119_Mu_nucseq_lung_CD_1          328.
+2 340821_15-2_20240119_Mu_nucseq_lung_CD_2          680 
+3 340821_16-3_20240119_Mu_nucseq_lung_CD_3         1354 
+4 340821_17-4_20240119_Mu_nucseq_lung_HFD_1          37 
+5 340821_18-5_20240119_Mu_nucseq_lung_HFD_2         795 
+6 340821_19-6_20240119_Mu_nucseq_lung_HFD_3         707 
+7 340821_20-7_20240119_Mu_nucseq_lung_HFD_4         290 </code></pre>
+</div>
+<div id="nuclei-and-gene-distributions-per-condition"
+class="section level2 tabset">
+<h2 class="tabset">Nuclei and gene distributions per condition</h2>
+<div id="umis---transcripts-per-condition" class="section level3">
+<h3>UMIs - transcripts per condition</h3>
+<pre class="r"><code>LungMu_obj@meta.data %&gt;% 
+    ggplot(aes(color=condition, x=nCount_RNA, fill= condition)) +
+    scale_fill_manual(values=colCond) +
+    geom_density(alpha = 0.2) + 
+    scale_x_log10() + 
+    theme_classic() +
+    ylab(&quot;Cell density&quot;) +
+    geom_vline(xintercept = 200)</code></pre>
+<p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/UMIs%20-%20transcripts%20per%20condition-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="gene-distribution-per-condition" class="section level3">
+<h3>Gene distribution per condition</h3>
+<pre class="r"><code># Visualize the distribution of genes detected per cell via histogram
+LungMu_obj@meta.data %&gt;% 
+    ggplot(aes(color=condition, x=nFeature_RNA, fill= condition)) + 
+  scale_fill_manual(values=colCond) +
+    geom_density(alpha = 0.2) + 
+    theme_classic() +
+    scale_x_log10() + 
+    geom_vline(xintercept = 110)</code></pre>
+<p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/Gene%20distribution%20per%20condition-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="novelty-score" class="section level3">
+<h3>novelty score</h3>
+<pre class="r"><code># Visualize the overall complexity of the gene expression by visualizing the genes detected per UMI (novelty score)
+LungMu_obj@meta.data %&gt;%
+    ggplot(aes(x=log10GenesPerUMI, color = condition, fill=condition)) +
+    scale_fill_manual(values=colCond) +
+    geom_density(alpha = 0.2) +
+    theme_classic() +
+    geom_vline(xintercept = 0.86)</code></pre>
+<p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/novelty%20score-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div
+id="exclude-hfd-1-sample-from-the-analysis-as-it-has-an-extremely-low-median-of-nuclei-and-genes-per-nuclei"
+class="section level2">
+<h2>Exclude HFD-1 sample from the analysis as it has an extremely low
+median of nuclei and genes per nuclei</h2>
+<pre class="r"><code>LungMu_obj &lt;- subset(LungMu_obj, subset = (dataset == &#39;340821_17-4_20240119_Mu_nucseq_lung_HFD_1&#39;), invert = TRUE)</code></pre>
+</div>
+<div id="plot-qc-metrics-again" class="section level2 tabset">
+<h2 class="tabset">Plot QC metrics again</h2>
+<div id="umis---transcripts-per-nuclei" class="section level3">
+<h3>UMIs - transcripts per nuclei</h3>
+<pre class="r"><code>LungMu_obj@meta.data %&gt;% 
+    ggplot(aes(color=dataset, x=nCount_RNA, fill= dataset)) +
+    scale_fill_manual(values=colDataset) +
+    geom_density(alpha = 0.2) + 
+    scale_x_log10() + 
+    theme_classic() +
+    ylab(&quot;Cell density&quot;)</code></pre>
+<p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/UMIs%20-%20transcripts%20per%20nuclei-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="gene-distribution-per-nuclei-1" class="section level3">
+<h3>Gene distribution per nuclei</h3>
+<pre class="r"><code># Visualize the distribution of genes detected per cell via histogram
+LungMu_obj@meta.data %&gt;% 
+    ggplot(aes(color=dataset, x=nFeature_RNA, fill= dataset)) + 
+  scale_fill_manual(values=colDataset) +
+    geom_density(alpha = 0.2) + 
+        scale_x_log10() +
+    theme_classic() </code></pre>
+<p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/CLEANED%20:%20Gene%20distribution%20per%20nuclei-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="genes-detected-per-umi-1" class="section level3">
+<h3>genes detected per UMI</h3>
+<pre class="r"><code># Add number of genes per UMI for each cell to metadata - measures complexity of dataset 
+LungMu_obj$log10GenesPerUMI &lt;- log10(LungMu_obj$nFeature_RNA) / log10(LungMu_obj$nCount_RNA)
+
+# Visualize the overall complexity of the gene expression by visualizing the genes detected per UMI (novelty score)
+LungMu_obj@meta.data %&gt;%
+    ggplot(aes(x=log10GenesPerUMI, color = dataset, fill=dataset)) +
+    scale_fill_manual(values=colDataset) +
+    geom_density(alpha = 0.2) +
+    scale_x_log10() +
+    theme_classic()</code></pre>
+<p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/CLEANED%20:%20gene%20expression%20complexity-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div
+id="compute-and-visualize-number-of-nuclei-per-sample-via-a-pie-chart-1"
+class="section level2">
+<h2>Compute and visualize number of nuclei per sample via a pie
+chart</h2>
+<pre class="r"><code>cells_per_dataset &lt;- table(LungMu_obj$dataset)
+cells_per_datasetDF &lt;-  data.frame(
+  sample=names(cells_per_dataset) ,  
+  cells=as.vector(cells_per_dataset)
+  )
+
+# Compute percentages
+cells_per_datasetDF$fraction &lt;- cells_per_datasetDF$cells / sum(cells_per_datasetDF$cells)
+
+# Compute the cumulative percentages (top of each rectangle)
+cells_per_datasetDF$ymax &lt;- cumsum(cells_per_datasetDF$fraction)
+
+# Compute the bottom of each rectangle
+cells_per_datasetDF$ymin &lt;- c(0, head(cells_per_datasetDF$ymax, n=-1))
+
+# Compute label position
+cells_per_datasetDF$labelPosition &lt;- (cells_per_datasetDF$ymax + cells_per_datasetDF$ymin) / 2
+
+# Compute a good label
+cells_per_datasetDF$label &lt;- paste0(cells_per_datasetDF$patient, &quot;\n value: &quot;, cells_per_datasetDF$nuclei)
+
+# Make the plot
+p&lt;- ggplot(cells_per_datasetDF, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=sample)) +
+  geom_rect() +
+  scale_fill_manual(values = colDataset) +
+  coord_polar(theta=&quot;y&quot;, start = 0) +
+  xlim(c(2, 4)) +
+  theme_void() +
+  annotate(geom = &#39;text&#39;, x = 2, y = 0, label = as.character(dim(LungMu_obj)[2]), size = 10)
+p</code></pre>
+<p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/CLEANED%20:%20number%20of%20nuclei/sample-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="save-processed-seurat-object" class="section level2">
+<h2>Save processed seurat object</h2>
+<pre class="r"><code>saveRDS(LungMu_obj, file=paste0(output_obj_dir, &quot;340821_Mu_Lung_snRNAseq_merged_preprocessed.rds&quot; ))</code></pre>
+</div>
+<div id="session-information" class="section level2">
+<h2>Session Information</h2>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.3.1 (2023-06-16)
+Platform: aarch64-apple-darwin20 (64-bit)
+Running under: macOS 15.3.2
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.3-arm64/Resources/lib/libRblas.0.dylib 
+LAPACK: /Library/Frameworks/R.framework/Versions/4.3-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.11.0
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+time zone: Europe/Zurich
+tzcode source: internal
+
+attached base packages:
+[1] grid      stats     graphics  grDevices utils     datasets  methods  
+[8] base     
+
+other attached packages:
+ [1] gridExtra_2.3      scCustomize_1.1.3  viridis_0.6.4      viridisLite_0.4.2 
+ [5] pheatmap_1.0.12    ggsci_3.0.0        zeallot_0.1.0      openxlsx_4.2.5.2  
+ [9] here_1.0.1         lubridate_1.9.4    forcats_1.0.0      purrr_1.0.2       
+[13] readr_2.1.4        tidyr_1.3.1        tibble_3.2.1       ggplot2_3.5.2     
+[17] tidyverse_2.0.0    dplyr_1.1.4        stringr_1.5.0      SeuratObject_5.0.2
+[21] Seurat_4.3.0.1     patchwork_1.3.0    plyr_1.8.9         workflowr_1.7.1   
+
+loaded via a namespace (and not attached):
+  [1] RColorBrewer_1.1-3     shape_1.4.6            rstudioapi_0.15.0     
+  [4] jsonlite_1.8.7         magrittr_2.0.3         ggbeeswarm_0.7.2      
+  [7] spatstat.utils_3.0-5   farver_2.1.1           rmarkdown_2.24        
+ [10] GlobalOptions_0.1.2    fs_1.6.3               vctrs_0.6.5           
+ [13] ROCR_1.0-11            spatstat.explore_3.2-1 paletteer_1.6.0       
+ [16] janitor_2.2.0          htmltools_0.5.6        sass_0.4.7            
+ [19] sctransform_0.3.5      parallelly_1.37.1      KernSmooth_2.23-21    
+ [22] bslib_0.5.1            htmlwidgets_1.6.2      ica_1.0-3             
+ [25] plotly_4.10.2          zoo_1.8-12             cachem_1.0.8          
+ [28] whisker_0.4.1          igraph_1.5.1           mime_0.12             
+ [31] lifecycle_1.0.4        pkgconfig_2.0.3        Matrix_1.6-4          
+ [34] R6_2.5.1               fastmap_1.1.1          snakecase_0.11.0      
+ [37] fitdistrplus_1.1-11    future_1.33.2          shiny_1.7.5           
+ [40] digest_0.6.36          colorspace_2.1-0       rematch2_2.1.2        
+ [43] ps_1.7.5               rprojroot_2.0.3        tensor_1.5            
+ [46] irlba_2.3.5.1          labeling_0.4.2         progressr_0.14.0      
+ [49] timechange_0.3.0       fansi_1.0.4            spatstat.sparse_3.0-2 
+ [52] httr_1.4.6             polyclip_1.10-4        abind_1.4-5           
+ [55] compiler_4.3.1         withr_3.0.2            highr_0.10            
+ [58] MASS_7.3-60            tools_4.3.1            vipor_0.4.5           
+ [61] lmtest_0.9-40          beeswarm_0.4.0         zip_2.3.0             
+ [64] httpuv_1.6.11          future.apply_1.11.2    goftest_1.2-3         
+ [67] glue_1.8.0             callr_3.7.3            nlme_3.1-162          
+ [70] promises_1.2.1         Rtsne_0.16             getPass_0.2-4         
+ [73] cluster_2.1.4          reshape2_1.4.4         generics_0.1.3        
+ [76] gtable_0.3.3           spatstat.data_3.0-1    tzdb_0.4.0            
+ [79] hms_1.1.3              data.table_1.14.8      sp_2.1-4              
+ [82] utf8_1.2.3             spatstat.geom_3.2-4    RcppAnnoy_0.0.21      
+ [85] ggrepel_0.9.6          RANN_2.6.1             pillar_1.9.0          
+ [88] ggprism_1.0.4          spam_2.10-0            later_1.3.1           
+ [91] circlize_0.4.15        splines_4.3.1          lattice_0.21-8        
+ [94] survival_3.5-5         deldir_1.0-9           tidyselect_1.2.0      
+ [97] miniUI_0.1.1.1         pbapply_1.7-2          knitr_1.43            
+[100] git2r_0.36.2           scattermore_1.2        xfun_0.40             
+[103] matrixStats_1.0.0      stringi_1.7.12         lazyeval_0.2.2        
+[106] yaml_2.3.7             evaluate_0.21          codetools_0.2-19      
+[109] cli_3.6.3              uwot_0.1.16            xtable_1.8-4          
+[112] reticulate_1.31        munsell_0.5.0          processx_3.8.2        
+[115] jquerylib_0.1.4        Rcpp_1.0.13            globals_0.16.3        
+[118] spatstat.random_3.1-5  png_0.1-8              ggrastr_1.0.2         
+[121] parallel_4.3.1         ellipsis_0.3.2         dotCall64_1.1-1       
+[124] listenv_0.9.1          scales_1.3.0           ggridges_0.5.4        
+[127] leiden_0.4.3           rlang_1.1.4            cowplot_1.1.1         </code></pre>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -700,34 +1176,34 @@ loaded via a namespace (and not attached):
  [37] fitdistrplus_1.1-11    future_1.33.2          shiny_1.7.5           
  [40] digest_0.6.36          colorspace_2.1-0       rematch2_2.1.2        
  [43] ps_1.7.5               rprojroot_2.0.3        tensor_1.5            
- [46] irlba_2.3.5.1          progressr_0.14.0       timechange_0.3.0      
- [49] fansi_1.0.4            spatstat.sparse_3.0-2  httr_1.4.6            
- [52] polyclip_1.10-4        abind_1.4-5            compiler_4.3.1        
- [55] withr_3.0.2            MASS_7.3-60            tools_4.3.1           
- [58] vipor_0.4.5            lmtest_0.9-40          beeswarm_0.4.0        
- [61] zip_2.3.0              httpuv_1.6.11          future.apply_1.11.2   
- [64] goftest_1.2-3          glue_1.8.0             callr_3.7.3           
- [67] nlme_3.1-162           promises_1.2.1         Rtsne_0.16            
- [70] getPass_0.2-4          cluster_2.1.4          reshape2_1.4.4        
- [73] generics_0.1.3         gtable_0.3.3           spatstat.data_3.0-1   
- [76] tzdb_0.4.0             hms_1.1.3              data.table_1.14.8     
- [79] sp_2.1-4               utf8_1.2.3             spatstat.geom_3.2-4   
- [82] RcppAnnoy_0.0.21       ggrepel_0.9.6          RANN_2.6.1            
- [85] pillar_1.9.0           ggprism_1.0.4          spam_2.10-0           
- [88] later_1.3.1            circlize_0.4.15        splines_4.3.1         
- [91] lattice_0.21-8         survival_3.5-5         deldir_1.0-9          
- [94] tidyselect_1.2.0       miniUI_0.1.1.1         pbapply_1.7-2         
- [97] knitr_1.43             git2r_0.36.2           scattermore_1.2       
-[100] xfun_0.40              matrixStats_1.0.0      stringi_1.7.12        
-[103] lazyeval_0.2.2         yaml_2.3.7             evaluate_0.21         
-[106] codetools_0.2-19       cli_3.6.3              uwot_0.1.16           
-[109] xtable_1.8-4           reticulate_1.31        munsell_0.5.0         
-[112] processx_3.8.2         jquerylib_0.1.4        Rcpp_1.0.13           
-[115] globals_0.16.3         spatstat.random_3.1-5  png_0.1-8             
-[118] ggrastr_1.0.2          parallel_4.3.1         ellipsis_0.3.2        
-[121] dotCall64_1.1-1        listenv_0.9.1          scales_1.3.0          
-[124] ggridges_0.5.4         leiden_0.4.3           rlang_1.1.4           
-[127] cowplot_1.1.1         </code></pre>
+ [46] irlba_2.3.5.1          labeling_0.4.2         progressr_0.14.0      
+ [49] timechange_0.3.0       fansi_1.0.4            spatstat.sparse_3.0-2 
+ [52] httr_1.4.6             polyclip_1.10-4        abind_1.4-5           
+ [55] compiler_4.3.1         withr_3.0.2            highr_0.10            
+ [58] MASS_7.3-60            tools_4.3.1            vipor_0.4.5           
+ [61] lmtest_0.9-40          beeswarm_0.4.0         zip_2.3.0             
+ [64] httpuv_1.6.11          future.apply_1.11.2    goftest_1.2-3         
+ [67] glue_1.8.0             callr_3.7.3            nlme_3.1-162          
+ [70] promises_1.2.1         Rtsne_0.16             getPass_0.2-4         
+ [73] cluster_2.1.4          reshape2_1.4.4         generics_0.1.3        
+ [76] gtable_0.3.3           spatstat.data_3.0-1    tzdb_0.4.0            
+ [79] hms_1.1.3              data.table_1.14.8      sp_2.1-4              
+ [82] utf8_1.2.3             spatstat.geom_3.2-4    RcppAnnoy_0.0.21      
+ [85] ggrepel_0.9.6          RANN_2.6.1             pillar_1.9.0          
+ [88] ggprism_1.0.4          spam_2.10-0            later_1.3.1           
+ [91] circlize_0.4.15        splines_4.3.1          lattice_0.21-8        
+ [94] survival_3.5-5         deldir_1.0-9           tidyselect_1.2.0      
+ [97] miniUI_0.1.1.1         pbapply_1.7-2          knitr_1.43            
+[100] git2r_0.36.2           scattermore_1.2        xfun_0.40             
+[103] matrixStats_1.0.0      stringi_1.7.12         lazyeval_0.2.2        
+[106] yaml_2.3.7             evaluate_0.21          codetools_0.2-19      
+[109] cli_3.6.3              uwot_0.1.16            xtable_1.8-4          
+[112] reticulate_1.31        munsell_0.5.0          processx_3.8.2        
+[115] jquerylib_0.1.4        Rcpp_1.0.13            globals_0.16.3        
+[118] spatstat.random_3.1-5  png_0.1-8              ggrastr_1.0.2         
+[121] parallel_4.3.1         ellipsis_0.3.2         dotCall64_1.1-1       
+[124] listenv_0.9.1          scales_1.3.0           ggridges_0.5.4        
+[127] leiden_0.4.3           rlang_1.1.4            cowplot_1.1.1         </code></pre>
 </div>
 </div>
 </div>
