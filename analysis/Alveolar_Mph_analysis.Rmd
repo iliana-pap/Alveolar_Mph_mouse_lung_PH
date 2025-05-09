@@ -1,0 +1,357 @@
+---
+title: "Alveolar_Macrophages_analysis"
+author: "Iliana Papadopoulou"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    self_contained: yes
+    code_folding: show
+    number_sections: no
+    toc: yes
+    toc_depth: 3
+    toc_float: true
+    collapsed: no
+    smooth_scroll: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = c("png", "pdf"))
+set.seed(1000)
+options(future.globals.maxSize = 8000 * 1024^2)
+```
+
+# 3. Analysis of alveolar macrophages extracted from murine lung samples of healthy mice vs mice with pulmonary hypertension and HFpEF
+
+## Load R libraries
+```{r libraries}
+suppressPackageStartupMessages({
+  library(plyr)
+  library(patchwork)
+  library(Seurat)
+  library(stringr)
+  library(dplyr)
+  library(tidyverse)
+  library(here)
+  library(openxlsx)
+  library(zeallot)
+  library(ggsci)
+  library(openxlsx)
+  library(pheatmap)
+  library(stringr)
+  library(viridis)
+  library(scCustomize)
+  library(stringr)
+  library(gridExtra)
+  library(grid)
+  library(tidyverse)
+  library(ggsignif)
+  library(ggbeeswarm)
+  library(ggrepel)
+  library(ggpubr)
+})
+```
+
+## Set directory
+```{r set directory}
+basedir <- here()
+source(paste0(basedir,'/analysis/Lung_snRNAseq_functions.R'), echo=FALSE)
+
+# Create directory to save preprocessed seurat objects
+output_obj_dir <- paste0(basedir,"/data/Output/")
+dir.create(output_obj_dir)
+```
+
+## Read annotated murine lung seurat object
+```{r read data}
+LungMu_obj <- readRDS(file= paste0(output_obj_dir, "340821_Mu_Lung_snRNAseq_merged_annotated.rds" ))
+```
+
+## Color vectors - Define color palete
+```{r color palete}
+cols<- pal_igv()(51)
+names(cols) <- c(0:50)
+
+colCond <- c("#631879FF","#F16913")
+names(colCond) <- unique(LungMu_obj$condition)
+
+
+colLab <- rep("",length(unique(LungMu_obj$label)))
+names(colLab) <- unique(LungMu_obj$label)
+colLab["AT2 Epithelial"] <-"#92C5DE"
+colLab["Bas/SMG duct Epithelial 1"] <-"#F4A582" 
+colLab["Bas/SMG duct Epithelial 2"] <-"#FDDBC7" 
+colLab["AT1 Epithelial"] <-"#9467BDFF"
+colLab["Fibroblasts"] <- "#FF1463FF"
+colLab["Arterial/Cap pulmonary EC"] <-"#990080FF"
+colLab["Alveolar Mph"] <-"#00CC33FF"
+colLab["Cil Epithelial"] <- "#009966FF"
+colLab["Immune cells"] <- "#053061"
+colLab["aCap pulmonary EC"] <- "#0099CCFF"
+colLab["Mesothelial"] <- "#67001F"
+colLab["VSMC/Pericytes"] <- "#E7C76FFF"
+
+
+colLab_reorder <- colLab[order(factor(names(colLab), levels = c("Arterial/Cap pulmonary EC","aCap pulmonary EC",
+                                                                "Bas/SMG duct Epithelial 1","Bas/SMG duct Epithelial 2",
+                                                                "AT1 Epithelial","AT2 Epithelial", "Cil Epithelial",
+                                                                "Fibroblasts","VSMC/Pericytes","Mesothelial",
+                                                                "Alveolar Mph", "Immune cells")))]
+
+
+LungMu_obj$label <- factor(LungMu_obj$label, levels = names(colLab_reorder))
+```
+
+## Figure S2D - Compute differential gene expression (average log2FC per cluster and per condition)
+```{r average log2FC per cluster and per condition}
+#Add a new column in data
+LungMu_obj$celltype_condition <- paste0(LungMu_obj$label,"_",LungMu_obj$condition)
+DefaultAssay(LungMu_obj) <-"RNA"
+Idents(LungMu_obj) <- LungMu_obj$celltype_condition
+DEmarkers <-FindAllMarkers(LungMu_obj, only.pos=T, logfc.threshold = 0.25,
+                           min.pct = 0.25)
+
+```
+
+```{r boxplot with average log2FC and significance, results='hide', echo=TRUE}
+new <- DEmarkers %>%
+  separate(cluster,
+           into = c("celltype","condition"),
+           sep = "_")
+new <-new[new$p_val_adj <= 0.05,] #keep only significant values
+#within groups order in descending order
+new <- new %>%
+  group_by(celltype,condition) %>%
+  arrange(desc(avg_log2FC), .by_group = TRUE)
+
+new$condition <- factor(new$condition, levels =c("Control", "PH-cHFpEF"))
+
+new$celltype <-factor(new$celltype, levels = names(colLab_reorder))
+
+p2 <- ggplot(new, aes(x=condition,y=avg_log2FC,fill=condition))+
+  geom_boxplot(show.legend = TRUE ) + labs(title="control vs PH-cHFpEF")  +facet_wrap(~celltype, ncol= 12) + theme(axis.line = element_line(),axis.text.x = element_text(face="bold"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    legend.key=element_blank(),
+    axis.text = element_text(angle = 90)) + scale_fill_manual(values = colCond) + xlab(" ") + ylab("AvgLog2FC")+
+  geom_signif(comparisons = list(c("Control","PH-cHFpEF")),
+              test = "wilcox.test", step_increase = 0.075, #wilcox
+              map_signif_level = TRUE, tip_length = 0, test.args = list(paired = FALSE)) +
+  geom_quasirandom(aes(fill = condition), shape = 21, 
+                groupOnX = TRUE, size = 0.8, alpha = 0.5) 
+
+g <- grid.force(ggplotGrob(p2))
+```
+
+```{r boxplot with average log2FC, fig.width= 10}
+# Get the names of grobs and their gPaths into a data.frame structure
+grobs_df <- do.call(cbind.data.frame, grid.ls(g, print = FALSE))
+# Build optimal gPaths that will be later used to identify grobs and edit them
+grobs_df$gPath_full <- paste(grobs_df$gPath, grobs_df$name, sep = "::")
+grobs_df$gPath_full <- gsub(pattern = "layout::", 
+                            replacement = "", 
+                            x = grobs_df$gPath_full, 
+                            fixed = TRUE)
+
+strip_bg_gpath <- grobs_df$gPath_full[grepl(pattern = ".*strip\\.background.*", 
+                                            x = grobs_df$gPath_full)]
+
+strip_txt_gpath <- grobs_df$gPath_full[grepl(pattern = "strip.*titleGrob.*text.*", 
+                                             x = grobs_df$gPath_full)]
+
+# Generate some color
+n_cols <- length(strip_bg_gpath)
+fills <- colLab_reorder #colLab_reorder #rainbow(n_cols)
+txt_colors <- gray(0:n_cols/n_cols)
+
+# Edit the grobs
+for (i in 1:length(strip_bg_gpath)){
+  g <- editGrob(grob = g, gPath = strip_bg_gpath[i], gp = gpar(fill = fills[i]))
+  g <- editGrob(grob = g, gPath = strip_txt_gpath[i], gp = gpar(col = txt_colors[i]))
+}
+
+# Draw the edited plot
+grid.newpage(); grid.draw(g)
+```
+
+## Figure 2C - Create an MA plot for alveolar macrophages - HFD vs CD
+```{r alveolar Mph MA HFD vs cd}
+cl <- "Alveolar Mph"
+DefaultAssay(LungMu_obj) <- "RNA"
+Idents(LungMu_obj) <- "celltype_condition"
+markers <- FindMarkers(LungMu_obj, ident.1 = paste0(cl,'_',"PH-cHFpEF"), ident.2 = paste0(cl,'_',"Control"), min.pct = 0.25, logfc.threshold = 0.25)
+
+# Compute mean expression per cell type
+markers_df <- markers
+
+# Split gene from ensembl ID
+markers_df$gene <- rownames(markers_df)
+markers_df <- markers_df  %>% 
+    mutate(geneSYMBOL=gsub("^[^\\.]*\\.", "", gene)) #remove all chatacters before first . #old =  "^.*\\."
+
+
+# Calculate mean gene/transcript expression only for cells included in each cluster
+gene_expression <- GetAssayData(LungMu_obj, layer = "counts", assay = "RNA")
+geneLogSums <- log2(rowSums(gene_expression))
+
+
+markers_df$logSum <-geneLogSums[markers_df$gene];
+markers_df$diffexpressed <- 'NO'
+markers_df$diffexpressed[markers_df$avg_log2FC > 0.25 & markers_df$p_val < 0.05 ] <- 'UP'
+markers_df$diffexpressed[markers_df$avg_log2FC < - 0.25 & markers_df$p_val < 0.05 ] <- 'DOWN'
+
+# select to plot all genes in HFD condition and top 30 in control
+topdegs_HFD <- markers_df  %>%
+  filter(diffexpressed == "UP") %>%
+  select(geneSYMBOL)
+topdegs_HFD <- topdegs_HFD[,"geneSYMBOL"][1:50]
+
+topdegs_CD <- markers_df  %>%
+  filter(diffexpressed == "DOWN") %>%
+  select(geneSYMBOL)
+topdegs_CD <- topdegs_CD[,"geneSYMBOL"][1:40]
+
+topdegs_CD <- topdegs_CD[! topdegs_CD %in% c("2900064K03Rik", "9930111J21Rik2")]
+
+markers_df$delabel <- ifelse((markers_df$diffexpressed %in% c("UP", "DOWN")) &
+                                (markers_df$geneSYMBOL %in% topdegs_HFD) |markers_df$geneSYMBOL %in% topdegs_CD,markers_df$geneSYMBOL ,NA)
+
+
+## Visualize MA plot
+p<- ggplot(markers_df,aes(x=logSum, y=avg_log2FC, col=diffexpressed, label = delabel)) +
+  # geom_vline(xintercept = c(-2.5, 2.5), col = 'gray', linetype = 'dashed') +
+    geom_hline(yintercept = c(0.25), col = 'gray', linetype = 'dashed') +
+    geom_point(size=1.5) +
+    scale_color_manual(values = c("#631879FF", "grey", "#F16913"),
+                       labels = c("Control", "Not significant", "PH-cHFpEF")
+                       ) +
+  labs(color = cl ,x = expression("Mean Normalized Expression"), y = expression(" Average log"[2]*"FC")) +
+  geom_text_repel(max.overlaps = Inf) + theme_set(theme_classic(base_size = 10)) +
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(), 
+    panel.background = element_blank()) +
+  coord_flip()
+
+print(p)
+```
+
+## Remove ensembl ID from gene name
+```{r remove ensembl ID from gene name}
+LungMu_obj <- as.SingleCellExperiment(LungMu_obj, assay = "RNA") #assay = "RNA"
+
+gene_name_fixdf <- data.frame(Gene_Name = rownames(LungMu_obj))
+gene_name_fixdf$Symbol <- gsub("^[^.]*.","", gene_name_fixdf$Gene_Name)
+
+# Check duplicates in df and fix them
+duplidx <- rownames((gene_name_fixdf[duplicated(gene_name_fixdf$Symbol), ]))
+while (length(duplidx) > 0) {
+  Fixed_dupl <- gene_name_fixdf %>% 
+  filter(row_number() %in% duplidx)  %>% 
+  mutate(Symbol = paste0(Symbol, ".1"))
+  gene_name_fixdf[duplidx,"Symbol"] <- Fixed_dupl$Symbol
+  
+  # Check again for double duplicates
+  duplidx <- rownames((gene_name_fixdf[duplicated(gene_name_fixdf$Symbol), ]))
+}
+
+rownames(LungMu_obj) <- gene_name_fixdf$Symbol
+
+# Convert SingleCell experiment object back to seurat object by retaining the reductions, normalization, etc
+LungMu_obj <- as.Seurat(LungMu_obj, assay = NULL) #assay = NULL
+
+```
+
+
+# Compute and visualize number of Alveolar macrophages per condition
+```{r Alveolar Mph abundance}
+
+LungMu_obj_Alv_Mph <-subset(LungMu_obj, label == cl) 
+
+cells_per_dataset <- table(LungMu_obj_Alv_Mph$condition)
+cells_per_datasetDF <-  data.frame(
+  sample=names(cells_per_dataset) ,  
+  cells=as.vector(cells_per_dataset)
+  )
+
+# Compute percentages
+cells_per_datasetDF$fraction <- cells_per_datasetDF$cells / sum(cells_per_datasetDF$cells)
+
+# Compute the cumulative percentages (top of each rectangle)
+cells_per_datasetDF$ymax <- cumsum(cells_per_datasetDF$fraction)
+
+# Compute the bottom of each rectangle
+cells_per_datasetDF$ymin <- c(0, head(cells_per_datasetDF$ymax, n=-1))
+
+# Compute label position
+cells_per_datasetDF$labelPosition <- (cells_per_datasetDF$ymax + cells_per_datasetDF$ymin) / 2
+
+# Compute a good label
+cells_per_datasetDF$label <- paste0(cells_per_datasetDF$patient, "\n value: ", cells_per_datasetDF$nuclei)
+
+p<- ggplot(cells_per_datasetDF, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=sample)) +
+  geom_rect() +
+  scale_fill_manual(values = colCond) +
+  coord_polar(theta="y", start = 0) +
+  xlim(c(2, 4)) +
+  theme_void() +
+  annotate(geom = 'text', x = 2, y = 0, label = as.character(dim(LungMu_obj_Alv_Mph)[2]), size = 10)
+p
+```
+
+## Figure 2D - Gene expression alterations among PH-cHFpEF and control mice {.tabset}
+### Cebpb, Dusp1, Flna, Cbr2
+```{r violin plots HFD vs CD - Cebpb, Dusp1, Flna, Cbr2, fig.height= 7 }
+DefaultAssay(LungMu_obj_Alv_Mph) <- "RNA"
+
+vp_case1 <- function(gene_signature, test_sign, y_max, name, signif){
+  plot_case1 <- function(signature){
+    VlnPlot(LungMu_obj_Alv_Mph, features = signature,
+            pt.size = 0.1, 
+           group.by = "condition", 
+            y.max = y_max, # add the y-axis maximum value - otherwise p-value hidden
+    cols = colCond) + stat_compare_means(comparisons = test_sign, label = signif, method = "wilcox.test", paired = FALSE)
+    
+  }
+  purrr::map(gene_signature, plot_case1) %>% cowplot::plot_grid(plotlist = .)
+}
+
+comparisons <- list(c("Control", "PH-cHFpEF")) 
+  
+gene_sig <-c("Cebpb", "Dusp1","Flna", "Cbr2" )
+vp_case1(gene_signature = gene_sig, test_sign = comparisons, y_max = 7, name = "Violin_plot_AlvMph_significant_1", signif = "p.signif")
+
+```
+
+### Sgk1, Cd300lf, Fos, Jund
+```{r violin plots HFD vs CD - Sgk1, Cd300lf, Fos, Jund, fig.height= 7}
+gene_sig <-c("Sgk1", "Cd300lf","Fos", "Jund" )
+vp_case1(gene_signature = gene_sig, test_sign = comparisons, y_max = 7, name = "Violin_plot_AlvMph_significant_2", signif = "p.signif")
+```
+
+
+## Combined Violin plot across all clusters
+```{r combined violin plot, fig.width= 12, fig.height= 8}
+Idents(LungMu_obj) <- "label"
+VlnPlot(object = LungMu_obj, features = c("Itgax","Flna", "Sgk1", "Syne2", "Ccn1", "Dusp1", "Fos", 
+                                          "Btg2", "Actg1", "Psap", "Ubc", "Junb", "Colgalt1",
+                                          "Axl","Cd300lf", "Amz1", "Dmxl2", "Sirpa", "Cebpb", "Abcg1",
+                                          "Mertk", "Chil3", "Lilr4b", "F7", "Ccl6", "Clec7a", "Mrc1", "Csf2ra", "Tfec"), 
+        group.by = "label", stack = TRUE, split.by = "condition")+
+theme(axis.text.x = element_text(angle = 90)) +
+  scale_fill_manual(values = colCond)
+
+```
+
+## Save processed seurat object
+```{r save object}
+saveRDS(LungMu_obj_Alv_Mph, file= paste0(output_obj_dir, "340821_Alveolar_macrophages_snRNAseq.rds" ))
+```
+
+## Session Information
+````{r Session Information}
+sessionInfo()
+````
+
