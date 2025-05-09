@@ -1,0 +1,218 @@
+---
+title: "Alveolar_Macrophages_GSEA"
+author: "Iliana Papadopoulou"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    self_contained: yes
+    code_folding: show
+    number_sections: no
+    toc: yes
+    toc_depth: 3
+    toc_float: true
+    collapsed: no
+    smooth_scroll: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = c("png", "pdf"))
+set.seed(1000)
+options(future.globals.maxSize = 8000 * 1024^2)
+```
+
+## Customize parameters
+
+```{r Customization}
+library(plyr)
+library(biomaRt)
+library(dplyr)
+library(tidyverse)
+library(simplifyEnrichment)
+library(msigdbr)
+library(msigdbr)
+library(here)
+library(stats)
+library(ggsci)
+library(clusterProfiler)
+library(dict)
+library(org.Mm.eg.db)
+library(DOSE)
+library(Seurat)
+library(openxlsx)
+library(zeallot)
+library(ggsci)
+library(openxlsx)
+library(pheatmap)
+library(stringr)
+library(viridis)
+library(scCustomize)
+library(stringr)
+library(gridExtra)
+library(grid)
+
+httr::set_config(httr::config(ssl_verifypeer = FALSE))
+
+organism <- "org.Mm.eg.db"
+disease_phase <- ""
+datatype <- 'SYMBOL'
+
+```
+
+# 4. Pathway enrichment analysis of control vs PH-cHFpEF mice in alveolar macrophages
+
+## Set directory
+```{r set directory}
+basedir <- here()
+source(paste0(basedir,'/analysis/Lung_snRNAseq_functions.R'), echo=FALSE)
+
+# Create directory to save preprocessed seurat objects
+output_obj_dir <- paste0(basedir,"/data/Output/")
+dir.create(output_obj_dir)
+```
+
+## Create directory for saving clustering results
+```{r directory doe clustering results}
+GSEADir <- paste0(output_obj_dir,"GSEA")
+dir.create(GSEADir)
+```
+
+## Read seurat annotated object
+```{r read data}
+LungMu_obj <- readRDS(file= paste0(output_obj_dir, "340821_Mu_Lung_snRNAseq_merged_annotated.rds" ))
+
+LungMu_obj$celltype_condition <- paste0(LungMu_obj$label,"_",LungMu_obj$condition)
+```
+
+## Color vectors - Define color palete
+```{r color palet}
+colCond <- c("#631879FF","#F16913")
+names(colCond) <- unique(LungMu_obj$condition)
+```
+
+
+```{r GSEA analysis}
+GSEA_Analysis <- function(data,organism,datatype,disease_phase,celltype,outdir){
+  obj_sub <- subset(data, label == celltype)
+  print(unique(obj_sub$label))
+  Idents(obj_sub) <- obj_sub$condition
+  markers <- FindAllMarkers(object = obj_sub, 
+                            only.pos = TRUE,
+                            logfc.threshold = 0.25,
+                            min.pct = 0.1,
+                            test.use = "wilcox")  
+  
+  Vec <- sort(unique(obj_sub$condition))
+  EnrichParameters <-customize_parameters(Vec,markers,organism,datatype,disease_phase, GSEADir)
+  
+  for (i in seq(1,length(EnrichParameters$enrichcl_list))){
+    terms<- EnrichParameters$enrichcl_list[[i]]@result
+    condition <- Vec[i]
+    condition <- gsub("/", "_", condition)
+    celltype <- gsub("/", "_", celltype)
+    write.xlsx(terms, paste0(outdir,"/","GO_Pathways_",celltype,"_",condition,".xlsx"),rowNames = TRUE)
+  } 
+  return(EnrichParameters)
+}
+
+
+celltype <-"Alveolar Mph"
+data <- LungMu_obj
+EnrichParameters <- GSEA_Analysis(data,organism,datatype,disease_phase,celltype,GSEADir)
+```
+
+## Join files in order to gather all info in one file - for gene name
+```{r join pathway files}
+# For control
+GO_semantic_Al_Mph_CD <- read.xlsx(paste0(GSEADir,"/","GO_Pathways_Alveolar Mph_Control.xlsx"))
+GO_semantic_Al_Mph_CD[,1] <- NULL
+
+# For PH-cHFpEF
+GO_semantic_HFD <- read.xlsx(paste0(GSEADir,"/","GO_Pathways_Alveolar Mph_PH-cHFpEF.xlsx"))
+GO_semantic_HFD[,1] <- NULL
+```
+
+## Find overlapping pathways between Alveolar macrophages control_vs_PH-cHFpEF vs control
+```{r compute overlapping pathways}
+df_overlapping_pathways <- inner_join(GO_semantic_Al_Mph_CD, GO_semantic_HFD,by=c("ID","Description") )
+overlapping_pathways <- df_overlapping_pathways$ID
+```
+
+## Find exclusive pathways in both  Alveolar macrophages control_vs_PH-cHFpEF vs control
+```{r compute exclusive pathways}
+df_list <-list(GO_semantic_Al_Mph_CD, GO_semantic_HFD)
+GO_semantic_AlvMph<-do.call("rbind", df_list)
+GO_semantic_AlvMph <- GO_semantic_AlvMph %>%
+  filter (! ID %in% overlapping_pathways)
+```
+
+## Figure 2E - Plot selected overlapping pathways and exclusive between Alveolar macrophages control vs PH-cHFpEF mice
+```{r visualite pathways, fig.width=8}
+pathways <- c(
+"GO:0050881","GO:0086001",  "GO:0098760", "GO:0098779",
+"GO:0043277","GO:0031589","GO:0030509","GO:1903036", "GO:0071353","GO:2000343","GO:0071248"
+)
+
+
+t_df_overlapping_pathways <- df_overlapping_pathways
+PATH_per_cond <- t_df_overlapping_pathways[,c("ID","Description", "p.adjust.x", "analysis.x", "p.adjust.y", "analysis.y")]
+
+# For pathways that are shared between conditions
+PATH_per_cond <- PATH_per_cond %>% filter(ID %in% pathways, .keep_all = TRUE)
+
+rownames(PATH_per_cond) <- PATH_per_cond$Description
+PATH_per_cond$Description <- NULL
+PATH_per_cond$ID <- NULL
+
+colnames(PATH_per_cond) <- c(unique(PATH_per_cond$analysis.x), 
+                             "analysis.x",
+                            unique(PATH_per_cond$analysis.y),
+                             "analysis.y")
+PATH_per_cond$analysis.x <- NULL
+PATH_per_cond$analysis.y <- NULL
+
+# For pathways that are exclusive in each condition
+exl_path <- setdiff(pathways, PATH_per_cond$ID)
+exl_path_cond <- GO_semantic_AlvMph[,c("ID","Description", "p.adjust", "analysis")]
+exl_path_cond <- exl_path_cond %>% filter(ID %in% exl_path, .keep_all = TRUE)
+exl_path_cond <- exl_path_cond %>%
+  pivot_wider(id_cols = c('ID','Description'), names_from = 'analysis',
+              values_from = 'p.adjust') %>%
+  as.data.frame()
+rownames(exl_path_cond) <- exl_path_cond$Description
+exl_path_cond$Description <- NULL
+exl_path_cond$ID <- NULL
+
+ if (("Control" %in% colnames(exl_path_cond) == "FALSE")){
+   exl_path_cond$Control <- NA
+ }
+
+# Combine two dfs
+PATH_per_cond <- rbind(PATH_per_cond, exl_path_cond)
+
+# Log the dataframe
+PATH_per_cond[] <- lapply(PATH_per_cond, function(x) -1 *(log10(x)))
+PATH_per_cond[is.na(PATH_per_cond)] <- 0
+
+PATH_per_cond <- PATH_per_cond %>% 
+  mutate(across(where(is.numeric))/rowSums(across(where(is.numeric))))
+
+# Generate annotations for columns
+annotation_col = data.frame(
+                    condition = colnames(PATH_per_cond)
+                )
+rownames(annotation_col) = colnames(PATH_per_cond)
+ann_colors = list(condition = colCond)
+
+# Choose color palette
+palette_length = 100
+     
+pheatmap(PATH_per_cond, cluster_rows=T, cluster_cols=F, cellwidth = 10, cellheight = 10, scale = "none",
+        color = colorRampPalette(RColorBrewer::brewer.pal(n = 11, name = "RdYlBu") )(50)|> rev() ,
+        annotation_col = annotation_col, annotation_colors = ann_colors) 
+```
+
+## Session Information
+````{r Session Information}
+sessionInfo()
+````
