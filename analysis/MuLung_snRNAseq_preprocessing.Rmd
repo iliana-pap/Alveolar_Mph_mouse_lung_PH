@@ -1,5 +1,5 @@
 ---
-title: "MuLung_snRNAseq_preprocessing"
+title: "Murine Lung Landscape - Preprocessing"
 author: "Iliana Papadopoulou"
 date: "`r Sys.Date()`"
 output:
@@ -21,7 +21,7 @@ set.seed(1000)
 options(future.globals.maxSize = 8000 * 1024^2)
 ```
 
-# 1. Preprocessing of murine lung samples from normal diet vs mice with high fat diet + L-name treatment with HFpEF
+# 1. **Preprocessing of murine lung samples from normal diet vs mice with high fat diet + L-name treatment with HFpEF**
 
 ## Load R libraries
 ```{r load R libraries}
@@ -103,7 +103,7 @@ names(cols) <- c(0:50)
 colDataset <- c("#FF7F0EFF","#17BECFFF", "#BB0021FF", "#00CC33FF", "#3B4992FF", "#4775FFFF", "#990080FF", "#AEC7E8FF","#FFBB78FF","#1B1919FF")
 names(colDataset) <- unique(LungMu_obj$dataset)
 
-colCond <- c("#631879FF","#BCBD22FF")
+colCond <- c("#631879FF","#F16913")
 names(colCond) <- unique(LungMu_obj$condition)
 ```
 
