@@ -1,0 +1,223 @@
+---
+title: "Alveolar Macrophages -  Endothelial Cells Interactome analysis"
+author: "Iliana Papadopoulou"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    self_contained: yes
+    code_folding: show
+    number_sections: no
+    toc: yes
+    toc_depth: 3
+    toc_float: true
+    collapsed: no
+    smooth_scroll: yes
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = c("png", "pdf"))
+set.seed(1000)
+options(future.globals.maxSize = 8000 * 1024^2)
+```
+
+## Load packages
+```{r libraries}
+suppressPackageStartupMessages({
+  library(plyr)
+  library(patchwork)
+  library(Seurat)
+  library(stringr)
+  library(dplyr)
+  library(tidyverse)
+  library(here)
+  library(openxlsx)
+  library(zeallot)
+  library(ggsci)
+  library(openxlsx)
+  library(pheatmap)
+  library(stringr)
+  library(viridis)
+  library(scCustomize)
+  library(stringr)
+  library(gridExtra)
+  library(grid)
+  library(CellChat)
+  library(ComplexHeatmap)
+})
+```
+
+
+# **5. Interactome analysis among alveolar macrophages and endothelial cells in control vs PH-cHFpEF mice**
+
+## Set directory
+```{r set directory}
+basedir <- here()
+source(paste0(basedir,'/analysis/Lung_snRNAseq_functions.R'), echo=FALSE)
+source(paste0(basedir,'/analysis/Cellchat_fun.R'), echo=FALSE)
+# Create directory to save the analysis outcome
+
+
+# Create directory to save preprocessed seurat objects
+output_obj_dir <- paste0(basedir,"/data/Output/")
+dir.create(output_obj_dir)
+```
+
+## Read seurat annotated object
+```{r read object}
+LungMu_obj <- readRDS(file= paste0(output_obj_dir, "340821_Mu_Lung_snRNAseq_merged_annotated.rds" ))
+```
+
+## Define color palette
+```{r color palette}
+colCond <- c("#631879FF","#FF7F0EFF")
+names(colCond) <- unique(LungMu_obj$condition)
+```
+
+## If object contains ensemble in gene name, remove it
+```{r remove ENSG id}
+
+#Convert to SingleCellExperimentObject for changing the rownames without change the reductions
+LungMu_obj.sce <- as.SingleCellExperiment(LungMu_obj, assay = "RNA") 
+
+gene_name_fixdf <- data.frame(Gene_Name = rownames(LungMu_obj.sce))
+gene_name_fixdf$Symbol <- gsub("^[^.]*.","", gene_name_fixdf$Gene_Name)
+
+# Check duplicates in df and fix them
+duplidx <- rownames((gene_name_fixdf[duplicated(gene_name_fixdf$Symbol), ]))
+Fixed_dupl <- gene_name_fixdf %>% 
+  filter(row_number() %in% duplidx)  %>% 
+ mutate(Symbol = paste0(Symbol, ".1"))
+gene_name_fixdf[duplidx,"Symbol"] <- Fixed_dupl$Symbol
+
+# Check again for double duplicates
+duplidx <- rownames((gene_name_fixdf[duplicated(gene_name_fixdf$Symbol), ]))
+
+Fixed_dupl <- gene_name_fixdf %>% 
+  filter(row_number() %in% duplidx)  %>% 
+ mutate(Symbol = paste0(Symbol, ".2"))
+gene_name_fixdf[duplidx,"Symbol"] <- Fixed_dupl$Symbol
+
+rownames(LungMu_obj.sce) <- gene_name_fixdf$Symbol
+
+# Convert SingleCell experiment object back to seurat object by retaining the reductions, normalization, etc
+LungMu_obj <- as.Seurat(LungMu_obj.sce, assay = NULL)
+```
+
+## Select alveolar macrophages and endothelial cells
+```{r cell population selection}
+celltypes_involved <- c("aCap pulmonary EC", "Arterial/Cap pulmonary EC", "Alveolar Mph")
+LungMu_obj <- subset(LungMu_obj, label %in% celltypes_involved)
+LungMu_obj_CD <- subset(LungMu_obj, condition == "Control")
+LungMu_obj_HFD <- subset(LungMu_obj, condition == "PH-cHFpEF")
+```
+
+## Cell type labels
+```{r}
+col_annotated <- pal_igv()(length(unique(LungMu_obj$label)))
+names(col_annotated) <- unique(LungMu_obj$label)
+
+col_annotated["Arterial/Cap pulmonary EC"] <-"#990080FF"
+col_annotated["Alveolar Mph"] <-"#00CC33FF"
+col_annotated["aCap pulmonary EC"] <- "#0099CCFF"
+```
+
+## Interactome Analysis
+```{r}
+## read object into cellchat
+cellchat_CD <- createCellChat(LungMu_obj_CD, group.by = "label")
+cellchat_HFD <- createCellChat(LungMu_obj_HFD, group.by = "label")
+
+cellchat_CD <- CellToCellCommunicationAnalysis(cellchat_CD,"mouse")
+
+## Save cellChat object for faster processing
+saveRDS(cellchat_CD, file= paste0(output_obj_dir, "340821_Mu_snRNAseq_lung_cellchat_Control_Control_vs_PH-cHFpEF_AlvMph_EC.rds"))
+
+cellchat_HFD <- CellToCellCommunicationAnalysis(cellchat_HFD,"mouse")
+
+## Save cellChat object for faster processing
+saveRDS(cellchat_HFD, file= paste0(output_obj_dir, "340821_Mu_snRNAseq_lung_cellchat_PH-cHFpEF_control_vs_PH-cHFpEF_AlvMph_EC.rds"))
+```
+
+## Merge cellchat objects
+```{r merge objects}
+object.list <- list(Control = cellchat_CD, PHcHFpEF = cellchat_HFD)
+cellchat <- mergeCellChat(object.list, add.names = names(object.list))
+```
+
+## Compare the total number of interactions and interaction strength --> Communication is enhanced in control vs FPEF
+```{r number and strength of interactions}
+gg1 <- compareInteractions(cellchat, show.legend = F, group = c(1,2), color.use = unname(colCond))
+gg2 <- compareInteractions(cellchat, show.legend = F, group = c(1,2), measure = "weight",color.use = unname(colCond))
+gg1 + gg2
+```
+
+## Compare the major sources and targets in 2D space
+### Identify cell populations with significant changes in sending or receiving signals
+```{r}
+num.link <- sapply(object.list, function(x) {rowSums(x@net$count) + colSums(x@net$count)-diag(x@net$count)})
+weight.MinMax <- c(min(num.link), max(num.link)) # control the dot size in the different datasets
+gg <- list()
+for (i in 1:length(object.list)) {
+  gg[[i]] <- netAnalysis_signalingRole_scatter(object.list[[i]], title = names(object.list)[i], weight.MinMax = weight.MinMax, color.use = col_annotated)
+}
+patchwork::wrap_plots(plots = gg)
+```
+
+
+## Compare the overall information flow of each signaling pathway to identify altered signaling with distinct interaction strength
+```{r}
+gg1 <- rankNet(cellchat, mode = "comparison", measure = "weight", sources.use = NULL, targets.use = NULL, stacked = T, do.stat = TRUE, color.use = unname(colCond))
+gg1
+```
+
+## Figure 7A : Compute signaling pathways exchanged among endothelial cells and alveolar macrophages via heatmaps{.tabset}
+### Control mice
+```{r Control mice}
+col_annotated_reorder <- col_annotated[order(factor(names(col_annotated), 
+                                             levels = rownames(object.list[[1]]@netP$prob)))]
+
+col_annotated_reorder <- col_annotated_reorder[names(col_annotated_reorder) %in% celltypes_involved]
+i = 1
+# combining all the identified signaling pathways from different datasets 
+pathway.union <- union(object.list[[i]]@netP$pathways, object.list[[i+1]]@netP$pathways)
+ht1 = netAnalysis_signalingRole_heatmap(object.list[[i]], pattern = "outgoing", signaling = pathway.union, title = names(object.list)[i], width = 5, height = 5, color.heatmap = "YlOrRd", color.use = col_annotated_reorder)
+ht2 = netAnalysis_signalingRole_heatmap(object.list[[i+1]], pattern = "outgoing", signaling = pathway.union, title = names(object.list)[i+1], width = 5, height = 5, color.heatmap = "YlOrRd", color.use = col_annotated_reorder)
+
+i = 1
+# combining all the identified signaling pathways from different datasets 
+pathway.union <- union(object.list[[i]]@netP$pathways, object.list[[i+1]]@netP$pathways)
+ht3 = netAnalysis_signalingRole_heatmap(object.list[[i]], pattern = "incoming", signaling = pathway.union, title = names(object.list)[i], width = 5, height = 5, color.heatmap = "YlOrRd", color.use = col_annotated_reorder)
+ht4 = netAnalysis_signalingRole_heatmap(object.list[[i+1]], pattern = "incoming", signaling = pathway.union, title = names(object.list)[i+1], width = 5, height = 5, color.heatmap = "YlOrRd", color.use = col_annotated_reorder)
+
+draw(ht1 + ht3, ht_gap = unit(0.5, "cm"))
+```
+
+### PH-cHFpEF mice
+```{r PHcHFpEF}
+draw(ht2 + ht4, ht_gap = unit(0.5, "cm"))
+```
+
+
+## Ligand-receptor (LR) interaction pairs{.tabset}
+### Exchanged signaling Endothelial - Alveolar Macrophages
+```{r EC-Alv Mph}
+celltypes_involved <- c("aCap pulmonary EC", "Arterial/Cap pulmonary EC", "Alveolar Mph")
+cols_vector <- col_annotated[names(col_annotated) %in% celltypes_involved ]
+
+## EC --> Alveolar Mph
+for (i in 1:length(object.list)) {
+  netVisual_chord_gene(object.list[[i]], sources.use = c(1,3) , targets.use = c(2), lab.cex = 0.8, color.use=col_annotated_reorder ,title.name = paste0("EC to Alveolar Mph  - ", names(object.list)[i]), small.gap = 1,show.legend = TRUE,legend.pos.x = 4,legend.pos.y = 5)
+}
+```
+
+### Exchanged signaling Alveolar Macrophages - Endothelial
+```{r Alv Mph-EC}
+netVisual_chord_gene(object.list[[1]], sources.use = c(2) , targets.use = c(1,3), lab.cex = 0.9, color.use=col_annotated_reorder ,title.name = paste0("Alveolar Mph to EC  - ", names(object.list)[1]), small.gap = 1,show.legend = TRUE,legend.pos.x = 8,
+                     legend.pos.y = 7)
+
+```
+
+## Session Information
+````{r Session Information}
+sessionInfo()
+````
