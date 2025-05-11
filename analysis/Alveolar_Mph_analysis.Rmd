@@ -1,5 +1,5 @@
 ---
-title: "Alveolar_Macrophages_analysis"
+title: "Alveolar Macrophages Analysis"
 author: "Iliana Papadopoulou"
 date: "`r Sys.Date()`"
 output:
@@ -21,7 +21,7 @@ set.seed(1000)
 options(future.globals.maxSize = 8000 * 1024^2)
 ```
 
-# 3. Analysis of alveolar macrophages extracted from murine lung samples of healthy mice vs mice with pulmonary hypertension and HFpEF
+# **3. Analysis of alveolar macrophages extracted from murine lung samples of healthy vs pulmonary hypertension - HFpEF mice**
 
 ## Load R libraries
 ```{r libraries}
