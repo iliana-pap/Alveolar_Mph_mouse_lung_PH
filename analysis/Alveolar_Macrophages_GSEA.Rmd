@@ -1,5 +1,5 @@
 ---
-title: "Alveolar_Macrophages_GSEA"
+title: "Alveolar Macrophages Pathway Enrichment Analysis"
 author: "Iliana Papadopoulou"
 date: "`r Sys.Date()`"
 output:
@@ -59,7 +59,7 @@ datatype <- 'SYMBOL'
 
 ```
 
-# 4. Pathway enrichment analysis of control vs PH-cHFpEF mice in alveolar macrophages
+# **4.Pathway enrichment analysis of control vs PH-cHFpEF mice in alveolar macrophages**
 
 ## Set directory
 ```{r set directory}
