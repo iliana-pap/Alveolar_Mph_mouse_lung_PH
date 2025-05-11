@@ -10,7 +10,7 @@ editor_options:
 
 ### **Alveolar Macrophages in murine lung microenvironment during Pulmonary Hypertension (PH)** : 
 
-* Murine Murine Lung landscape - data preprocessing :
+* Murine Lung landscape - data preprocessing :
 [MuLung_snRNAseq_preprocessing.html](MuLung_snRNAseq_preprocessing.html)
 
 * Exploration of Murine Lung landscape - unbiased clustering, cell type annotation, gene expression differences : 
@@ -21,3 +21,6 @@ editor_options:
 
 * Computation of enriched pathways in Alveolar Macrophages of control vs PH-cHFpEF mice : 
 [Alveolar_Macrophages_GSEA.html](Alveolar_Macrophages_GSEA.html)
+
+* Communication signaling exchanged along Alveolar Macrophages and Endothelial cells : 
+[Alveolar_Mph_EC_Interactome_analysis.html](Alveolar_Mph_EC_Interactome_analysis.html)
