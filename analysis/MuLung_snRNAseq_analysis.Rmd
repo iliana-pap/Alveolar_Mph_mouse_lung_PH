@@ -1,5 +1,5 @@
 ---
-title: "MuLung_snRNAseq_analysis"
+title: "Murine Lung Microenvironment Analysis"
 author: "Iliana Papadopoulou"
 date: "`r Sys.Date()`"
 output:
@@ -21,7 +21,7 @@ set.seed(1000)
 options(future.globals.maxSize = 8000 * 1024^2)
 ```
 
-# 2. Analysis of murine lung samples from healthy mice vs mice with HFpEF in Pulmonary Hypertension (PH)
+# **2. Analysis of murine lung samples from healthy mice vs mice with HFpEF in Pulmonary Hypertension (PH)**
 
 ## Load R libraries
 ```{r libraries}
