@@ -11,9 +11,9 @@
 
 <meta name="author" content="Iliana Papadopoulou" />
 
-<meta name="date" content="2025-05-07" />
+<meta name="date" content="2025-05-11" />
 
-<title>MuLung_snRNAseq_preprocessing</title>
+<title>Murine Lung Landscape - Preprocessing</title>
 
 <script src="site_libs/header-attrs-2.24/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -351,9 +351,9 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">MuLung_snRNAseq_preprocessing</h1>
+<h1 class="title toc-ignore">Murine Lung Landscape - Preprocessing</h1>
 <h4 class="author">Iliana Papadopoulou</h4>
-<h4 class="date">2025-05-07</h4>
+<h4 class="date">2025-05-11</h4>
 
 </div>
 
@@ -382,7 +382,7 @@ class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2025-05-07
+<strong>Last updated:</strong> 2025-05-11
 </p>
 <p>
 <strong>Checks:</strong> <span
@@ -514,15 +514,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomilianapapAlveolarMphmouselungPHtree32d33de80fca5eb19af542af6f4709ac8187f372targetblank32d33dea">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomilianapapAlveolarMphmouselungPHtree2b8e55a23162b6873ed17cba304c7564bef86591targetblank2b8e55aa">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/tree/32d33de80fca5eb19af542af6f4709ac8187f372" target="_blank">32d33de</a>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/tree/2b8e55a23162b6873ed17cba304c7564bef86591" target="_blank">2b8e55a</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomilianapapAlveolarMphmouselungPHtree32d33de80fca5eb19af542af6f4709ac8187f372targetblank32d33dea"
+id="strongRepositoryversionstrongahrefhttpsgithubcomilianapapAlveolarMphmouselungPHtree2b8e55a23162b6873ed17cba304c7564bef86591targetblank2b8e55aa"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -532,7 +532,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/tree/32d33de80fca5eb19af542af6f4709ac8187f372" target="_blank">32d33de</a>.
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/tree/2b8e55a23162b6873ed17cba304c7564bef86591" target="_blank">2b8e55a</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -550,8 +550,10 @@ Ignored files:
     Ignored:    .DS_Store
     Ignored:    data/Output/
 
-Untracked files:
-    Untracked:  analysis/Lung_snRNAseq_functions.R
+Unstaged changes:
+    Modified:   analysis/Alveolar_Macrophages_GSEA.Rmd
+    Modified:   analysis/Alveolar_Mph_analysis.Rmd
+    Modified:   analysis/MuLung_snRNAseq_analysis.Rmd
 
 </code></pre>
 <p>
@@ -598,6 +600,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/2b8e55a23162b6873ed17cba304c7564bef86591/analysis/MuLung_snRNAseq_preprocessing.Rmd" target="_blank">2b8e55a</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-11
+</td>
+<td>
+update preprocessing
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/6933769e8e13c56ea87bb35c20b0d3aead2afbf8/docs/MuLung_snRNAseq_preprocessing.html" target="_blank">6933769</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -659,8 +695,8 @@ Create project
 <div
 id="preprocessing-of-murine-lung-samples-from-normal-diet-vs-mice-with-high-fat-diet-l-name-treatment-with-hfpef"
 class="section level1">
-<h1>1. Preprocessing of murine lung samples from normal diet vs mice
-with high fat diet + L-name treatment with HFpEF</h1>
+<h1>1. <strong>Preprocessing of murine lung samples from normal diet vs
+mice with high fat diet + L-name treatment with HFpEF</strong></h1>
 <div id="load-r-libraries" class="section level2">
 <h2>Load R libraries</h2>
 <pre class="r"><code>suppressPackageStartupMessages({
@@ -742,7 +778,7 @@ names(cols) &lt;- c(0:50)
 colDataset &lt;- c(&quot;#FF7F0EFF&quot;,&quot;#17BECFFF&quot;, &quot;#BB0021FF&quot;, &quot;#00CC33FF&quot;, &quot;#3B4992FF&quot;, &quot;#4775FFFF&quot;, &quot;#990080FF&quot;, &quot;#AEC7E8FF&quot;,&quot;#FFBB78FF&quot;,&quot;#1B1919FF&quot;)
 names(colDataset) &lt;- unique(LungMu_obj$dataset)
 
-colCond &lt;- c(&quot;#631879FF&quot;,&quot;#BCBD22FF&quot;)
+colCond &lt;- c(&quot;#631879FF&quot;,&quot;#F16913&quot;)
 names(colCond) &lt;- unique(LungMu_obj$condition)</code></pre>
 </div>
 <div id="investigate-quality-control-qc-metrics" class="section level2">
@@ -761,6 +797,43 @@ LungMu_obj@meta.data %&gt;%
     theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
     theme(plot.title = element_text(hjust=0.5, face=&quot;bold&quot;))</code></pre>
 <p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/Nuclei%20counts%20per%20condition-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Nuclei-counts-per-condition-1">
+Past versions of "Nuclei counts per condition-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-Nuclei-counts-per-condition-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/6933769e8e13c56ea87bb35c20b0d3aead2afbf8/docs/figure/MuLung_snRNAseq_preprocessing.Rmd/Nuclei counts per condition-1.png" target="_blank">6933769</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="maximum-gene-counts" class="section level4">
 <h4>Maximum gene counts</h4>
@@ -779,6 +852,43 @@ p&lt;- ggplot(gene_counts, aes(x=dataset, y=max_gene_counts, fill = dataset)) +
     axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 print(p)</code></pre>
 <p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/maximum%20gene%20counts-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-maximum-gene-counts-1">
+Past versions of "maximum gene counts-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-maximum-gene-counts-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/6933769e8e13c56ea87bb35c20b0d3aead2afbf8/docs/figure/MuLung_snRNAseq_preprocessing.Rmd/maximum gene counts-1.png" target="_blank">6933769</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code># Convert to named vector
 geneCountsPerDataset &lt;- as.character(gene_counts$max_gene_counts)
 names(geneCountsPerDataset) &lt;- gene_counts$dataset
@@ -809,6 +919,43 @@ LungMu_obj@meta.data %&gt;%
     theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
     theme(plot.title = element_text(hjust=0.5, face=&quot;bold&quot;))</code></pre>
 <p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/Nuclei%20counts%20per%20dataset-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Nuclei-counts-per-dataset-1">
+Past versions of "Nuclei counts per dataset-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-Nuclei-counts-per-dataset-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/6933769e8e13c56ea87bb35c20b0d3aead2afbf8/docs/figure/MuLung_snRNAseq_preprocessing.Rmd/Nuclei counts per dataset-1.png" target="_blank">6933769</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -831,6 +978,44 @@ class="section level2 tabset">
     ylab(&quot;Cell density&quot;) +
     geom_vline(xintercept = 300)</code></pre>
 <p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/UMIs%20-%20transcripts%20per%20dataset-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-UMIs---transcripts-per-dataset-1">
+Past versions of "UMIs - transcripts per dataset-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-UMIs---transcripts-per-dataset-1"
+class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/6933769e8e13c56ea87bb35c20b0d3aead2afbf8/docs/figure/MuLung_snRNAseq_preprocessing.Rmd/UMIs - transcripts per dataset-1.png" target="_blank">6933769</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="gene-distribution-per-nuclei" class="section level3">
 <h3>Gene distribution per nuclei</h3>
@@ -843,6 +1028,43 @@ LungMu_obj@meta.data %&gt;%
     theme_classic() +
     geom_vline(xintercept = 150)</code></pre>
 <p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/Gene%20distribution%20per%20nuclei-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Gene-distribution-per-nuclei-1">
+Past versions of "Gene distribution per nuclei-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-Gene-distribution-per-nuclei-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/6933769e8e13c56ea87bb35c20b0d3aead2afbf8/docs/figure/MuLung_snRNAseq_preprocessing.Rmd/Gene distribution per nuclei-1.png" target="_blank">6933769</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="genes-detected-per-umi" class="section level3">
 <h3>Genes detected per UMI</h3>
@@ -857,6 +1079,43 @@ LungMu_obj@meta.data %&gt;%
     theme_classic() +
     geom_vline(xintercept = 0.88)</code></pre>
 <p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/genes%20detected%20per%20UMI-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-genes-detected-per-UMI-1">
+Past versions of "genes detected per UMI-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-genes-detected-per-UMI-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/6933769e8e13c56ea87bb35c20b0d3aead2afbf8/docs/figure/MuLung_snRNAseq_preprocessing.Rmd/genes detected per UMI-1.png" target="_blank">6933769</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 </div>
 <div
@@ -895,6 +1154,43 @@ p&lt;- ggplot(cells_per_datasetDF, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fil
   annotate(geom = &#39;text&#39;, x = 2, y = 0, label = as.character(dim(LungMu_obj)[2]), size = 10)
 p</code></pre>
 <p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/number%20of%20nuclei/sample-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-sample-1">
+Past versions of sample-1.png
+</button>
+</p>
+<div id="fig-sample-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/6933769e8e13c56ea87bb35c20b0d3aead2afbf8/docs/figure/MuLung_snRNAseq_preprocessing.Rmd/number of nuclei/sample-1.png" target="_blank">6933769</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div
 id="find-median-number-of-nuclei-and-genes-per-nuclei-before-filtering"
@@ -940,6 +1236,44 @@ class="section level2 tabset">
     ylab(&quot;Cell density&quot;) +
     geom_vline(xintercept = 200)</code></pre>
 <p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/UMIs%20-%20transcripts%20per%20condition-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-UMIs---transcripts-per-condition-1">
+Past versions of "UMIs - transcripts per condition-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-UMIs---transcripts-per-condition-1"
+class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/6933769e8e13c56ea87bb35c20b0d3aead2afbf8/docs/figure/MuLung_snRNAseq_preprocessing.Rmd/UMIs - transcripts per condition-1.png" target="_blank">6933769</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="gene-distribution-per-condition" class="section level3">
 <h3>Gene distribution per condition</h3>
@@ -952,6 +1286,44 @@ LungMu_obj@meta.data %&gt;%
     scale_x_log10() + 
     geom_vline(xintercept = 110)</code></pre>
 <p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/Gene%20distribution%20per%20condition-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Gene-distribution-per-condition-1">
+Past versions of "Gene distribution per condition-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-Gene-distribution-per-condition-1"
+class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/6933769e8e13c56ea87bb35c20b0d3aead2afbf8/docs/figure/MuLung_snRNAseq_preprocessing.Rmd/Gene distribution per condition-1.png" target="_blank">6933769</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="novelty-score" class="section level3">
 <h3>novelty score</h3>
@@ -963,6 +1335,43 @@ LungMu_obj@meta.data %&gt;%
     theme_classic() +
     geom_vline(xintercept = 0.86)</code></pre>
 <p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/novelty%20score-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-novelty-score-1">
+Past versions of "novelty score-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-novelty-score-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/6933769e8e13c56ea87bb35c20b0d3aead2afbf8/docs/figure/MuLung_snRNAseq_preprocessing.Rmd/novelty score-1.png" target="_blank">6933769</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 </div>
 <div
@@ -984,6 +1393,44 @@ median of nuclei and genes per nuclei</h2>
     theme_classic() +
     ylab(&quot;Cell density&quot;)</code></pre>
 <p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/UMIs%20-%20transcripts%20per%20nuclei-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-UMIs---transcripts-per-nuclei-1">
+Past versions of "UMIs - transcripts per nuclei-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-UMIs---transcripts-per-nuclei-1"
+class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/6933769e8e13c56ea87bb35c20b0d3aead2afbf8/docs/figure/MuLung_snRNAseq_preprocessing.Rmd/UMIs - transcripts per nuclei-1.png" target="_blank">6933769</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="gene-distribution-per-nuclei-1" class="section level3">
 <h3>Gene distribution per nuclei</h3>
@@ -995,6 +1442,44 @@ LungMu_obj@meta.data %&gt;%
         scale_x_log10() +
     theme_classic() </code></pre>
 <p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/CLEANED%20:%20Gene%20distribution%20per%20nuclei-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-CLEANED-:-Gene-distribution-per-nuclei-1">
+Past versions of "CLEANED : Gene distribution per nuclei-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-CLEANED-:-Gene-distribution-per-nuclei-1"
+class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/6933769e8e13c56ea87bb35c20b0d3aead2afbf8/docs/figure/MuLung_snRNAseq_preprocessing.Rmd/CLEANED : Gene distribution per nuclei-1.png" target="_blank">6933769</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="genes-detected-per-umi-1" class="section level3">
 <h3>genes detected per UMI</h3>
@@ -1009,6 +1494,44 @@ LungMu_obj@meta.data %&gt;%
     scale_x_log10() +
     theme_classic()</code></pre>
 <p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/CLEANED%20:%20gene%20expression%20complexity-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-CLEANED-:-gene-expression-complexity-1">
+Past versions of "CLEANED : gene expression complexity-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-CLEANED-:-gene-expression-complexity-1"
+class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/6933769e8e13c56ea87bb35c20b0d3aead2afbf8/docs/figure/MuLung_snRNAseq_preprocessing.Rmd/CLEANED : gene expression complexity-1.png" target="_blank">6933769</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 </div>
 <div
@@ -1047,6 +1570,43 @@ p&lt;- ggplot(cells_per_datasetDF, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fil
   annotate(geom = &#39;text&#39;, x = 2, y = 0, label = as.character(dim(LungMu_obj)[2]), size = 10)
 p</code></pre>
 <p><img src="figure/MuLung_snRNAseq_preprocessing.Rmd/CLEANED%20:%20number%20of%20nuclei/sample-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-sample-1">
+Past versions of sample-1.png
+</button>
+</p>
+<div id="fig-sample-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/iliana-pap/Alveolar_Mph_mouse_lung_PH/blob/6933769e8e13c56ea87bb35c20b0d3aead2afbf8/docs/figure/MuLung_snRNAseq_preprocessing.Rmd/CLEANED : number of nuclei/sample-1.png" target="_blank">6933769</a>
+</td>
+<td>
+iliana-pap
+</td>
+<td>
+2025-05-07
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="save-processed-seurat-object" class="section level2">
 <h2>Save processed seurat object</h2>
